@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDEX Terminal - Wireframe v2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; height: 100vh; display: flex; flex-direction: column; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #161b22; border-bottom: 1px solid #30363d;
+    padding: 10px 20px; height: 56px; flex-shrink: 0;
+  }
+  .topbar .logo { font-size: 16px; font-weight: 700; color: #58a6ff; }
+  .topbar .wallet-input { display: flex; align-items: center; gap: 8px; }
+  .topbar .wallet-input input {
+    background: #0d1117; border: 1px solid #30363d; color: #c9d1d9;
+    padding: 6px 12px; border-radius: 6px; width: 340px; font-size: 13px;
+  }
+  .topbar .wallet-input button {
+    background: #238636; color: #fff; border: none; padding: 6px 16px;
+    border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  .topbar .stats { display: flex; gap: 24px; font-size: 13px; }
+  .topbar .stats .label { color: #8b949e; margin-right: 4px; }
+  .topbar .stats .value-green { color: #3fb950; font-weight: 600; }
+  .topbar .stats .risk-badge {
+    background: #f8514922; color: #f85149; padding: 2px 8px;
+    border-radius: 4px; font-weight: 600;
+  }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+  .panel { border-right: 1px solid #30363d; display: flex; flex-direction: column; }
+  .panel:last-child { border-right: none; }
+  .panel-header {
+    display: flex; background: #161b22; border-bottom: 1px solid #30363d;
+    padding: 0; flex-shrink: 0;
+  }
+  .tab {
+    padding: 10px 16px; font-size: 12px; color: #8b949e; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.2s;
+  }
+  .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+  .tab:hover { color: #c9d1d9; }
+  .panel-body { flex: 1; padding: 12px; overflow-y: auto; }
+
+  .left { width: 280px; flex-shrink: 0; }
+  .center { flex: 1; display: flex; flex-direction: column; }
+  .right { width: 320px; flex-shrink: 0; }
+
+  .section-label {
+    font-size: 11px; color: #8b949e; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 8px; margin-top: 14px;
+  }
+  .section-label:first-child { margin-top: 0; }
+
+  .exchange-selector { position: relative; }
+  .exchange-dropdown.show { display:block !important; }
+  .exchange-option:hover { background:#58a6ff22 !important; }
+
+  .bottombar {
+    background: #161b22; border-top: 1px solid #30363d;
+    height: 120px; flex-shrink: 0; display: flex; flex-direction: column;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== TOP BAR ========== -->
+<div class="topbar">
+  <div class="logo">⚡ PDEX Terminal</div>
+  <div class="wallet-input">
+    <div class="exchange-selector" onclick="this.querySelector('.exchange-dropdown').classList.toggle('show')">
+      <div style="display:flex; align-items:center; gap:6px; background:#161b22; border:1px solid #30363d; padding:6px 12px; border-radius:6px; cursor:pointer; user-select:none;">
+        <span style="width:8px; height:8px; border-radius:50%; background:#3fb950; display:inline-block;"></span>
+        <span id="selected-exchange" style="color:#c9d1d9; font-size:13px; font-weight:600;">Hyperliquid</span>
+        <span style="color:#484f58; font-size:10px; margin-left:2px;">▾</span>
+      </div>
+      <div class="exchange-dropdown" style="display:none; position:absolute; top:100%; left:0; margin-top:4px; background:#161b22; border:1px solid #30363d; border-radius:8px; overflow:hidden; z-index:100; min-width:160px; box-shadow:0 8px 24px #00000066;">
+        <div class="exchange-option" onclick="event.stopPropagation(); pickExchange('Hyperliquid', '#3fb950')" style="display:flex; align-items:center; gap:8px; padding:10px 14px; cursor:pointer; font-size:13px; background:#58a6ff15;">
+          <span style="width:8px; height:8px; border-radius:50%; background:#3fb950; display:inline-block;"></span> Hyperliquid
+        </div>
+        <div class="exchange-option" onclick="event.stopPropagation(); pickExchange('Aster', '#a371f7')" style="display:flex; align-items:center; gap:8px; padding:10px 14px; cursor:pointer; font-size:13px;">
+          <span style="width:8px; height:8px; border-radius:50%; background:#a371f7; display:inline-block;"></span> Aster
+        </div>
+        <div class="exchange-option" onclick="event.stopPropagation(); pickExchange('dYdX', '#6966ff')" style="display:flex; align-items:center; gap:8px; padding:10px 14px; cursor:pointer; font-size:13px;">
+          <span style="width:8px; height:8px; border-radius:50%; background:#6966ff; display:inline-block;"></span> dYdX
+        </div>
+      </div>
+    </div>
+    <input type="text" placeholder="지갑 주소 입력 (0x...)" value="0x1a2B...9fC4" />
+    <button>연결</button>
+  </div>
+  <div class="stats">
+    <span><span class="label">Risk</span><span class="risk-badge">7/10</span></span>
+  </div>
+</div>
+
+<!-- ========== MAIN CONTENT ========== -->
+<div class="main">
+
+  <!-- LEFT: Portfolio + Positions + Orders (탭 없이 한 화면) -->
+  <div class="panel left">
+    <div class="panel-header">
+      <div class="tab active">포트폴리오</div>
+    </div>
+    <div class="panel-body">
+
+      <!-- 계정 요약 -->
+      <div style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:4px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="color:#8b949e;">총 자산</span><span style="font-weight:600;">$48,230.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="color:#8b949e;">미실현 PnL</span><span style="color:#3fb950; font-weight:600;">+$366.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="color:#8b949e;">사용 마진</span><span>$12,400.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="color:#8b949e;">가용 마진</span><span>$35,830.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;">
+          <span style="color:#8b949e;">마진 사용률</span><span style="color:#d29922; font-weight:600;">25.7%</span>
+        </div>
+      </div>
+
+      <!-- 실현 PnL / Volume (기간 선택) -->
+      <div style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:4px;">
+        <div style="display:flex; gap:4px; margin-bottom:8px;">
+          <span class="period-btn" onclick="selectPeriod(this,'24h')" style="font-size:10px; padding:3px 8px; border-radius:4px; cursor:pointer; background:#30363d; color:#8b949e;">24h</span>
+          <span class="period-btn" onclick="selectPeriod(this,'7d')" style="font-size:10px; padding:3px 8px; border-radius:4px; cursor:pointer; background:#58a6ff22; color:#58a6ff; font-weight:600;">7D</span>
+          <span class="period-btn" onclick="selectPeriod(this,'30d')" style="font-size:10px; padding:3px 8px; border-radius:4px; cursor:pointer; background:#30363d; color:#8b949e;">30D</span>
+          <span class="period-btn" onclick="selectPeriod(this,'all')" style="font-size:10px; padding:3px 8px; border-radius:4px; cursor:pointer; background:#30363d; color:#8b949e;">All</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="color:#8b949e;">실현 PnL</span><span id="realized-pnl" style="color:#3fb950; font-weight:600;">+$11,974.56</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;">
+          <span style="color:#8b949e;">Volume</span><span id="volume-val" style="font-weight:600;">$284,320.00</span>
+        </div>
+      </div>
+
+      <!-- 오픈 포지션 -->
+      <div class="section-label">오픈 포지션</div>
+
+      <div class="position-card" onclick="selectCoin('BTC')" style="background:#161b22; border:2px solid #58a6ff; border-radius:8px; padding:10px; margin-bottom:6px; cursor:pointer;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          <span style="font-weight:600; color:#58a6ff; font-size:13px;">BTC-PERP</span>
+          <span style="background:#238636; color:#fff; padding:1px 8px; border-radius:4px; font-size:11px;">LONG 10x</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#8b949e; margin-bottom:3px;">
+          <span>진입 $67,240</span><span>현재 $68,100</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px;">
+          <span style="color:#3fb950; font-weight:600;">+$430.00 (+1.28%)</span>
+          <span style="color:#8b949e;">청산 $60,516</span>
+        </div>
+      </div>
+
+      <div class="position-card" onclick="selectCoin('ETH')" style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:6px; cursor:pointer;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          <span style="font-weight:600; color:#58a6ff; font-size:13px;">ETH-PERP</span>
+          <span style="background:#f85149; color:#fff; padding:1px 8px; border-radius:4px; font-size:11px;">SHORT 5x</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#8b949e; margin-bottom:3px;">
+          <span>진입 $3,820</span><span>현재 $3,790</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px;">
+          <span style="color:#3fb950; font-weight:600;">+$60.00 (+0.79%)</span>
+          <span style="color:#8b949e;">청산 $4,584</span>
+        </div>
+      </div>
+
+      <div class="position-card" onclick="selectCoin('SOL')" style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:6px; cursor:pointer;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          <span style="font-weight:600; color:#58a6ff; font-size:13px;">SOL-PERP</span>
+          <span style="background:#238636; color:#fff; padding:1px 8px; border-radius:4px; font-size:11px;">LONG 3x</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#8b949e; margin-bottom:3px;">
+          <span>진입 $178.50</span><span>현재 $172.30</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px;">
+          <span style="color:#f85149; font-weight:600;">-$124.00 (-3.47%)</span>
+          <span style="color:#8b949e;">청산 $119.00</span>
+        </div>
+      </div>
+
+      <!-- 오픈 오더 -->
+      <div class="section-label">오픈 오더</div>
+
+      <div class="position-card" onclick="selectOrder('BTC')" style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:6px; cursor:pointer;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          <span style="font-weight:600; color:#58a6ff; font-size:13px;">BTC-PERP</span>
+          <span style="background:#23863644; color:#3fb950; padding:1px 8px; border-radius:4px; font-size:11px;">매수 지정가</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#8b949e;">
+          <span>$65,000.00</span><span>0.2 BTC</span><span>14:20</span>
+        </div>
+      </div>
+
+      <div class="position-card" onclick="selectOrder('ETH')" style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:6px; cursor:pointer;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          <span style="font-weight:600; color:#58a6ff; font-size:13px;">ETH-PERP</span>
+          <span style="background:#f8514944; color:#f85149; padding:1px 8px; border-radius:4px; font-size:11px;">매도 지정가</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#8b949e;">
+          <span>$3,700.00</span><span>1.0 ETH</span><span>13:45</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CENTER: Chart + Orderbook (동시 표시) -->
+  <div class="panel center">
+    <div class="panel-header" style="align-items:center; padding:0 12px; gap:0;">
+      <!-- 코인 선택 -->
+      <div style="display:flex; align-items:center; gap:6px; padding:8px 12px 8px 0; border-right:1px solid #30363d; margin-right:12px;">
+        <span id="market-coin" style="font-size:14px; font-weight:700; color:#fff;">BTC-USDC</span>
+        <span style="font-size:11px; color:#8b949e;">▾</span>
+        <span id="market-leverage" style="font-size:11px; background:#58a6ff22; color:#58a6ff; padding:1px 6px; border-radius:3px; font-weight:600;">10x</span>
+      </div>
+      <!-- 마켓 데이터 -->
+      <div style="display:flex; align-items:center; gap:16px; font-size:11px; flex:1;">
+        <div><span style="color:#484f58;">Mark</span><br/><span id="market-mark" style="color:#c9d1d9;">68,092</span></div>
+        <div><span style="color:#484f58;">Oracle</span><br/><span id="market-oracle" style="color:#c9d1d9;">68,129</span></div>
+        <div><span style="color:#484f58;">24h Change</span><br/><span id="market-change" style="color:#3fb950;">+860 / +1.28%</span></div>
+        <div><span style="color:#484f58;">24h Volume</span><br/><span id="market-volume" style="color:#c9d1d9;">$3,139,374,717</span></div>
+        <div><span style="color:#484f58;">Open Interest</span><br/><span id="market-oi" style="color:#c9d1d9;">$1,847,990,136</span></div>
+        <div><span style="color:#484f58;">Funding / Countdown</span><br/><span id="market-funding" style="color:#d29922;">+0.0650%</span> <span style="color:#8b949e;">00:37:43</span></div>
+      </div>
+    </div>
+    <!-- 타임프레임 바 -->
+    <div style="display:flex; align-items:center; background:#0d1117; border-bottom:1px solid #30363d; padding:4px 12px; gap:2px; flex-shrink:0;">
+        <span class="tab" style="font-size:11px; padding:6px 8px;">1m</span>
+        <span class="tab" style="font-size:11px; padding:6px 8px;">5m</span>
+        <span class="tab active" style="font-size:11px; padding:6px 8px;">15m</span>
+        <span class="tab" style="font-size:11px; padding:6px 8px;">1H</span>
+        <span class="tab" style="font-size:11px; padding:6px 8px;">4H</span>
+        <span class="tab" style="font-size:11px; padding:6px 8px;">1D</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:row; overflow:hidden;">
+
+      <!-- Chart Area (왼쪽) -->
+      <div style="flex:1; position:relative; min-height:0;">
+        <svg width="100%" height="100%" viewBox="0 0 600 400" preserveAspectRatio="none" style="position:absolute; top:0; left:0;">
+          <line x1="0" y1="100" x2="600" y2="100" stroke="#21262d" stroke-width="1"/>
+          <line x1="0" y1="200" x2="600" y2="200" stroke="#21262d" stroke-width="1"/>
+          <line x1="0" y1="300" x2="600" y2="300" stroke="#21262d" stroke-width="1"/>
+          <g transform="translate(40,0)">
+            <line x1="0" y1="100" x2="0" y2="210" stroke="#3fb950" stroke-width="1"/>
+            <rect x="-7" y="125" width="14" height="60" fill="#3fb950" rx="1"/>
+          </g>
+          <g transform="translate(75,0)">
+            <line x1="0" y1="85" x2="0" y2="220" stroke="#f85149" stroke-width="1"/>
+            <rect x="-7" y="95" width="14" height="75" fill="#f85149" rx="1"/>
+          </g>
+          <g transform="translate(110,0)">
+            <line x1="0" y1="110" x2="0" y2="230" stroke="#f85149" stroke-width="1"/>
+            <rect x="-7" y="130" width="14" height="65" fill="#f85149" rx="1"/>
+          </g>
+          <g transform="translate(145,0)">
+            <line x1="0" y1="120" x2="0" y2="250" stroke="#3fb950" stroke-width="1"/>
+            <rect x="-7" y="170" width="14" height="55" fill="#3fb950" rx="1"/>
+          </g>
+          <g transform="translate(180,0)">
+            <line x1="0" y1="95" x2="0" y2="210" stroke="#3fb950" stroke-width="1"/>
+            <rect x="-7" y="115" width="14" height="65" fill="#3fb950" rx="1"/>
+          </g>
+          <g transform="translate(215,0)">
+            <line x1="0" y1="75" x2="0" y2="185" stroke="#3fb950" stroke-width="1"/>
+            <rect x="-7" y="95" width="14" height="55" fill="#3fb950" rx="1"/>
+          </g>
+          <g transform="translate(250,0)">
+            <line x1="0" y1="65" x2="0" y2="175" stroke="#f85149" stroke-width="1"/>
+            <rect x="-7" y="72" width="14" height="65" fill="#f85149" rx="1"/>
+          </g>
+          <g transform="translate(285,0)">
+            <line x1="0" y1="85" x2="0" y2="190" stroke="#3fb950" stroke-width="1"/>
+            <rect x="-7" y="115" width="14" height="48" fill="#3fb950" rx="1"/>
+          </g>
+          <g transform="translate(320,0)">
+            <line x1="0" y1="68" x2="0" y2="160" stroke="#3fb950" stroke-width="1"/>
+            <rect x="-7" y="85" width="14" height="55" fill="#3fb950" rx="1"/>
+          </g>
+          <g transform="translate(355,0)">
+            <line x1="0" y1="60" x2="0" y2="155" stroke="#f85149" stroke-width="1"/>
+            <rect x="-7" y="65" width="14" height="60" fill="#f85149" rx="1"/>
+          </g>
+          <g transform="translate(390,0)">
+            <line x1="0" y1="72" x2="0" y2="180" stroke="#3fb950" stroke-width="1"/>
+            <rect x="-7" y="100" width="14" height="50" fill="#3fb950" rx="1"/>
+          </g>
+          <g transform="translate(425,0)">
+            <line x1="0" y1="48" x2="0" y2="145" stroke="#3fb950" stroke-width="1"/>
+            <rect x="-7" y="68" width="14" height="55" fill="#3fb950" rx="1"/>
+          </g>
+          <g transform="translate(460,0)">
+            <line x1="0" y1="40" x2="0" y2="135" stroke="#3fb950" stroke-width="1"/>
+            <rect x="-7" y="58" width="14" height="45" fill="#3fb950" rx="1"/>
+          </g>
+          <g transform="translate(495,0)">
+            <line x1="0" y1="50" x2="0" y2="130" stroke="#f85149" stroke-width="1"/>
+            <rect x="-7" y="55" width="14" height="50" fill="#f85149" rx="1"/>
+          </g>
+          <g transform="translate(530,0)">
+            <line x1="0" y1="58" x2="0" y2="148" stroke="#3fb950" stroke-width="1"/>
+            <rect x="-7" y="78" width="14" height="42" fill="#3fb950" rx="1"/>
+          </g>
+          <!-- Volume -->
+          <rect x="33" y="355" width="14" height="30" fill="#3fb95044" rx="1"/>
+          <rect x="68" y="345" width="14" height="40" fill="#f8514944" rx="1"/>
+          <rect x="103" y="350" width="14" height="35" fill="#f8514944" rx="1"/>
+          <rect x="138" y="358" width="14" height="27" fill="#3fb95044" rx="1"/>
+          <rect x="173" y="340" width="14" height="45" fill="#3fb95044" rx="1"/>
+          <rect x="208" y="335" width="14" height="50" fill="#3fb95044" rx="1"/>
+          <rect x="243" y="345" width="14" height="40" fill="#f8514944" rx="1"/>
+          <rect x="278" y="362" width="14" height="23" fill="#3fb95044" rx="1"/>
+          <rect x="313" y="350" width="14" height="35" fill="#3fb95044" rx="1"/>
+          <rect x="348" y="355" width="14" height="30" fill="#f8514944" rx="1"/>
+          <rect x="383" y="358" width="14" height="27" fill="#3fb95044" rx="1"/>
+          <rect x="418" y="335" width="14" height="50" fill="#3fb95044" rx="1"/>
+          <rect x="453" y="330" width="14" height="55" fill="#3fb95044" rx="1"/>
+          <rect x="488" y="355" width="14" height="30" fill="#f8514944" rx="1"/>
+          <rect x="523" y="362" width="14" height="23" fill="#3fb95044" rx="1"/>
+        </svg>
+      </div>
+
+      <!-- Orderbook Area (오른쪽) -->
+      <div style="width:200px; flex-shrink:0; border-left:1px solid #30363d; display:flex; flex-direction:column; padding:8px 10px; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:10px; color:#8b949e; text-transform:uppercase; letter-spacing:0.5px;">
+          <span>가격</span><span>수량</span><span>누적</span>
+        </div>
+        <!-- Asks (매도) -->
+        <div style="font-size:11px; font-family:monospace;">
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:12%; background:#f8514915;"></div>
+            <span style="color:#f85149;">68,350</span><span>0.30</span><span style="color:#8b949e;">4.25</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:18%; background:#f8514915;"></div>
+            <span style="color:#f85149;">68,300</span><span>0.55</span><span style="color:#8b949e;">3.95</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:15%; background:#f8514915;"></div>
+            <span style="color:#f85149;">68,250</span><span>0.42</span><span style="color:#8b949e;">3.40</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:25%; background:#f8514915;"></div>
+            <span style="color:#f85149;">68,200</span><span>0.68</span><span style="color:#8b949e;">2.98</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:38%; background:#f8514915;"></div>
+            <span style="color:#f85149;">68,150</span><span>1.05</span><span style="color:#8b949e;">2.30</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:45%; background:#f8514915;"></div>
+            <span style="color:#f85149;">68,120</span><span>1.25</span><span style="color:#8b949e;">1.25</span>
+          </div>
+        </div>
+        <!-- Spread -->
+        <div style="text-align:center; padding:6px 0; font-size:11px; color:#58a6ff; border-top:1px solid #30363d; border-bottom:1px solid #30363d; margin:4px 0;">
+          $20.0 <span style="color:#8b949e; font-size:10px;">(0.03%)</span>
+        </div>
+        <!-- Bids (매수) -->
+        <div style="font-size:11px; font-family:monospace;">
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:30%; background:#3fb95015;"></div>
+            <span style="color:#3fb950;">68,100</span><span>0.85</span><span style="color:#8b949e;">0.85</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:45%; background:#3fb95015;"></div>
+            <span style="color:#3fb950;">68,050</span><span>1.20</span><span style="color:#8b949e;">2.05</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:35%; background:#3fb95015;"></div>
+            <span style="color:#3fb950;">68,000</span><span>0.95</span><span style="color:#8b949e;">3.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:55%; background:#3fb95015;"></div>
+            <span style="color:#3fb950;">67,950</span><span>1.50</span><span style="color:#8b949e;">4.50</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:65%; background:#3fb95015;"></div>
+            <span style="color:#3fb950;">67,900</span><span>1.80</span><span style="color:#8b949e;">6.30</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:50%; background:#3fb95015;"></div>
+            <span style="color:#3fb950;">67,850</span><span>1.35</span><span style="color:#8b949e;">7.65</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: AI Copilot -->
+  <div class="panel right">
+    <div class="panel-header" id="ai-tab-header">
+      <div class="tab active" onclick="showAiTab('risk',this)">리스크</div>
+      <div class="tab" onclick="showAiTab('funding',this)">펀딩</div>
+      <div class="tab" onclick="showAiTab('oi',this)">OI</div>
+      <div class="tab" onclick="showAiTab('liq',this)">청산</div>
+      <div class="tab" onclick="showAiTab('suggest',this)">제안</div>
+    </div>
+    <div class="panel-body">
+
+      <!-- 리스크 탭 -->
+      <div id="ai-risk" class="ai-tab-content"></div>
+
+      <!-- 펀딩 탭 -->
+      <div id="ai-funding" class="ai-tab-content" style="display:none;"></div>
+
+      <!-- OI 탭 -->
+      <div id="ai-oi" class="ai-tab-content" style="display:none;"></div>
+
+      <!-- 청산 탭 -->
+      <div id="ai-liq" class="ai-tab-content" style="display:none;"></div>
+
+      <!-- 제안 탭 -->
+      <div id="ai-suggest" class="ai-tab-content" style="display:none;"></div>
+
+      <!-- 오더 분석 탭들 (오더 선택 시 표시) -->
+      <div id="ai-order-strategy" class="ai-tab-content" style="display:none;"></div>
+      <div id="ai-order-exec" class="ai-tab-content" style="display:none;"></div>
+      <div id="ai-order-cluster" class="ai-tab-content" style="display:none;"></div>
+      <div id="ai-order-impact" class="ai-tab-content" style="display:none;"></div>
+      <div id="ai-order-suggest" class="ai-tab-content" style="display:none;"></div>
+
+    </div>
+  </div>
+
+</div><!-- end .main -->
+
+<!-- ========== BOTTOM BAR ========== -->
+<div class="bottombar">
+  <div class="panel-header">
+    <div class="tab active" onclick="showBottomTab('alerts',this)">알림</div>
+    <div class="tab" onclick="showBottomTab('journal',this)">Trade Journal</div>
+  </div>
+  <div id="bottom-alerts" class="bottom-tab-content" style="padding:8px 16px; font-size:12px; overflow-y:auto; flex:1;">
+    <div style="display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid #21262d;">
+      <span style="color:#d29922;">⚠</span>
+      <span style="color:#8b949e;">14:32:05</span>
+      <span>BTC-PERP 펀딩 레이트 극단 수준 (+0.065%) — 롱 포지션 비용 증가 주의</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid #21262d;">
+      <span style="color:#3fb950;">✓</span>
+      <span style="color:#8b949e;">14:28:12</span>
+      <span>ETH-PERP 숏 포지션 수익 목표 도달 근접 ($3,780)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:4px 0;">
+      <span style="color:#f85149;">✕</span>
+      <span style="color:#8b949e;">14:15:30</span>
+      <span>SOL-PERP 롱 포지션 손실 확대 중 (-3.47%) — 손절 라인 확인 필요</span>
+    </div>
+  </div>
+  <div id="bottom-journal" class="bottom-tab-content" style="padding:8px 16px; font-size:12px; overflow-y:auto; flex:1; display:none;">
+    <table style="width:100%; border-collapse:collapse; font-size:11px;">
+      <thead>
+        <tr style="color:#8b949e; text-align:left;">
+          <th style="padding:4px 8px;">시간</th>
+          <th style="padding:4px 8px;">코인</th>
+          <th style="padding:4px 8px;">방향</th>
+          <th style="padding:4px 8px;">진입가</th>
+          <th style="padding:4px 8px;">청산가</th>
+          <th style="padding:4px 8px;">PnL</th>
+          <th style="padding:4px 8px;">평가</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-top:1px solid #21262d;">
+          <td style="padding:4px 8px; color:#8b949e;">13:20</td>
+          <td style="padding:4px 8px; color:#58a6ff;">BTC-PERP</td>
+          <td style="padding:4px 8px;"><span style="color:#3fb950;">LONG</span></td>
+          <td style="padding:4px 8px;">$66,800</td>
+          <td style="padding:4px 8px;">$67,450</td>
+          <td style="padding:4px 8px; color:#3fb950; font-weight:600;">+$325.00</td>
+          <td style="padding:4px 8px; color:#3fb950;">👍 좋은 진입</td>
+        </tr>
+        <tr style="border-top:1px solid #21262d;">
+          <td style="padding:4px 8px; color:#8b949e;">11:45</td>
+          <td style="padding:4px 8px; color:#58a6ff;">ETH-PERP</td>
+          <td style="padding:4px 8px;"><span style="color:#f85149;">SHORT</span></td>
+          <td style="padding:4px 8px;">$3,850</td>
+          <td style="padding:4px 8px;">$3,870</td>
+          <td style="padding:4px 8px; color:#f85149; font-weight:600;">-$40.00</td>
+          <td style="padding:4px 8px; color:#d29922;">⚠ 역추세 진입</td>
+        </tr>
+        <tr style="border-top:1px solid #21262d;">
+          <td style="padding:4px 8px; color:#8b949e;">09:30</td>
+          <td style="padding:4px 8px; color:#58a6ff;">SOL-PERP</td>
+          <td style="padding:4px 8px;"><span style="color:#3fb950;">LONG</span></td>
+          <td style="padding:4px 8px;">$175.20</td>
+          <td style="padding:4px 8px;">$177.80</td>
+          <td style="padding:4px 8px; color:#3fb950; font-weight:600;">+$52.00</td>
+          <td style="padding:4px 8px; color:#3fb950;">👍 지지선 반등</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+var periodData = {
+  '24h': { pnl: '+$1,240.30', volume: '$42,180.00' },
+  '7d':  { pnl: '+$11,974.56', volume: '$284,320.00' },
+  '30d': { pnl: '+$28,450.12', volume: '$1,245,600.00' },
+  'all': { pnl: '+$67,320.88', volume: '$4,892,100.00' }
+};
+
+
+var coinData = {
+  BTC: {
+    risk: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">BTC-PERP 리스크</span>\
+    <span style="background:#f8514933;color:#f85149;padding:3px 10px;border-radius:12px;font-size:13px;font-weight:700;">7/10</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Leverage Risk</span><span style="color:#f85149;font-weight:600;">2/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Liquidation Risk</span><span style="color:#d29922;font-weight:600;">1/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Volatility Risk</span><span style="color:#f85149;font-weight:600;">2/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Funding Crowd Risk</span><span style="color:#d29922;font-weight:600;">1/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;">\
+      <span style="color:#8b949e;">Concentration Risk</span><span style="color:#d29922;font-weight:600;">1/2</span>\
+    </div>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>⚠ 레버리지 10x — 높은 수준</div>\
+    <div>⚡ Funding +0.065% — 롱 과밀</div>\
+    <div>📊 저항선 $68,500 근접 (0.6%)</div>\
+    <div>🛡 청산 거리 11.1% ($60,516)</div>\
+    <div>📈 변동성 대비 레버리지 과다</div>\
+  </div>\
+</div>\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:6px;">📍 Support / Resistance</div>\
+  <div style="font-size:11px;line-height:1.7;color:#8b949e;">\
+    <div style="display:flex;justify-content:space-between;"><span>7D High</span><span style="color:#f85149;">$68,920</span></div>\
+    <div style="display:flex;justify-content:space-between;"><span>7D Low</span><span style="color:#3fb950;">$65,100</span></div>\
+    <div style="display:flex;justify-content:space-between;"><span>VWAP</span><span style="color:#c9d1d9;">$67,340</span></div>\
+    <div style="display:flex;justify-content:space-between;"><span>Pivot R1</span><span style="color:#f85149;">$68,500</span></div>\
+    <div style="display:flex;justify-content:space-between;"><span>Pivot S1</span><span style="color:#3fb950;">$66,800</span></div>\
+  </div>\
+</div>',
+    funding: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">BTC 펀딩 분석</span>\
+    <span style="color:#d29922;font-size:13px;font-weight:600;">+0.065%</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">1h Trend</span><span style="color:#f85149;">↑ +0.008%</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">4h Trend</span><span style="color:#f85149;">↑ +0.012%</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">24h Trend</span><span style="color:#d29922;">→ +0.002%</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;">\
+      <span style="color:#8b949e;">Z-Score</span><span style="color:#f85149;font-weight:600;">+2.8σ</span>\
+    </div>\
+  </div>\
+  <div style="background:#f8514915;border:1px solid #f8514944;border-radius:6px;padding:8px;margin-bottom:8px;">\
+    <div style="font-size:11px;color:#f85149;font-weight:600;">⚠ 극단 펀딩 경고</div>\
+    <div style="font-size:11px;color:#8b949e;margin-top:2px;">30일 평균(0.01%) 대비 6.5배 — extreme long crowd</div>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>📌 Mean Reversion: 평균 회귀 가능성 높음</div>\
+    <div style="color:#d29922;font-weight:500;margin-top:4px;">💡 롱 포지션 과밀 상태. 숏 스퀴즈 가능성 있으나 펀딩 비용 주의</div>\
+  </div>\
+</div>',
+    oi: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">BTC OI 분석</span>\
+    <span style="color:#3fb950;font-size:13px;font-weight:600;">+2.4%</span>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">\
+      <span style="background:#3fb95022;color:#3fb950;padding:2px 8px;border-radius:4px;font-size:11px;">가격 ↑</span>\
+      <span style="background:#3fb95022;color:#3fb950;padding:2px 8px;border-radius:4px;font-size:11px;">OI ↑</span>\
+    </div>\
+    <div style="color:#3fb950;font-weight:500;margin-top:4px;">→ 신규 롱 진입 중, 추세 강화 시그널</div>\
+  </div>\
+</div>\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;">\
+  <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:4px;">📊 OI Spike 모니터링</div>\
+  <div style="font-size:11px;color:#8b949e;">24h OI 변화: <span style="color:#3fb950;font-weight:600;">+2.4%</span> (임계값: 5%)</div>\
+  <div style="font-size:11px;color:#8b949e;margin-top:2px;">상태: <span style="color:#3fb950;">정상 범위</span></div>\
+</div>',
+    liq: '\
+<div style="background:#161b22;border:1px solid #f8514944;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">BTC Liquidation Cluster</span>\
+    <span style="color:#d29922;font-size:11px;font-weight:600;">⚠ 근접</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Long Liq Cluster</span><span style="color:#f85149;font-weight:600;">$64,500</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Short Liq Cluster</span><span style="color:#3fb950;font-weight:600;">$69,800</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;">\
+      <span style="color:#8b949e;">현재가</span><span style="color:#c9d1d9;font-weight:600;">$68,100</span>\
+    </div>\
+  </div>\
+  <div style="background:#f8514915;border:1px solid #f8514944;border-radius:6px;padding:8px;">\
+    <div style="font-size:11px;color:#d29922;">Long cluster $64,500 — 현재가 대비 -5.3%</div>\
+    <div style="font-size:11px;color:#f85149;margin-top:2px;">Short cluster $69,800 — 현재가 대비 +2.5% ⚠ 근접</div>\
+  </div>\
+  <div style="font-size:11px;color:#8b949e;margin-top:8px;line-height:1.6;">\
+    💡 숏 청산 클러스터가 현재가 ±2% 이내에 위치 — Price magnet 가능성. 급등 시 숏 스퀴즈 트리거 주의\
+  </div>\
+</div>',
+    suggest: '\
+<div style="background:#0d1117;border:1px solid #58a6ff44;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="font-size:13px;font-weight:600;color:#58a6ff;margin-bottom:8px;">🤖 BTC-PERP AI 제안</div>\
+  <div style="font-size:12px;line-height:1.8;color:#c9d1d9;">\
+    BTC 롱 포지션의 리스크가 높습니다 (7/10). 저항선 $68,500 돌파 여부를 확인 후 포지션 유지를 권장합니다. 펀딩 비용이 누적되고 있으므로 단기 포지션 정리를 고려하세요.\
+  </div>\
+</div>\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;">\
+  <div style="font-size:11px;color:#484f58;margin-bottom:4px;">⚙ Rule Engine 산출 → AI 해석</div>\
+  <div style="font-size:11px;line-height:1.6;color:#8b949e;">\
+    <div>• Risk Score 7/10 (레버리지+변동성 위험 높음)</div>\
+    <div>• Funding Z-Score +2.8σ (극단 롱 과밀)</div>\
+    <div>• 저항선 Pivot R1 $68,500 근접</div>\
+    <div>• Liq Cluster $64,500 (롱) 주의</div>\
+  </div>\
+</div>'
+  },
+  ETH: {
+    risk: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">ETH-PERP 리스크</span>\
+    <span style="background:#3fb95033;color:#3fb950;padding:3px 10px;border-radius:12px;font-size:13px;font-weight:700;">3/10</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Leverage Risk</span><span style="color:#3fb950;font-weight:600;">1/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Liquidation Risk</span><span style="color:#3fb950;font-weight:600;">0/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Volatility Risk</span><span style="color:#3fb950;font-weight:600;">1/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Funding Crowd Risk</span><span style="color:#3fb950;font-weight:600;">0/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;">\
+      <span style="color:#8b949e;">Concentration Risk</span><span style="color:#d29922;font-weight:600;">1/2</span>\
+    </div>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>✓ 레버리지 5x — 적정 수준</div>\
+    <div>✓ 숏 포지션 — 펀딩 수취 중</div>\
+    <div>🛡 청산 거리 20.1% ($4,584)</div>\
+  </div>\
+</div>\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:6px;">📍 Support / Resistance</div>\
+  <div style="font-size:11px;line-height:1.7;color:#8b949e;">\
+    <div style="display:flex;justify-content:space-between;"><span>7D High</span><span style="color:#f85149;">$3,890</span></div>\
+    <div style="display:flex;justify-content:space-between;"><span>7D Low</span><span style="color:#3fb950;">$3,680</span></div>\
+    <div style="display:flex;justify-content:space-between;"><span>VWAP</span><span style="color:#c9d1d9;">$3,785</span></div>\
+    <div style="display:flex;justify-content:space-between;"><span>Pivot S1</span><span style="color:#3fb950;">$3,720</span></div>\
+  </div>\
+</div>',
+    funding: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">ETH 펀딩 분석</span>\
+    <span style="color:#3fb950;font-size:13px;font-weight:600;">-0.012%</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">1h Trend</span><span style="color:#3fb950;">↓ -0.003%</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">4h Trend</span><span style="color:#3fb950;">↓ -0.008%</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">24h Trend</span><span style="color:#8b949e;">→ -0.001%</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;">\
+      <span style="color:#8b949e;">Z-Score</span><span style="color:#3fb950;font-weight:600;">-0.4σ</span>\
+    </div>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>📌 Mean Reversion: 평균 범위 내, 안정적</div>\
+    <div style="color:#3fb950;font-weight:500;margin-top:4px;">💡 숏 포지션 유리. 펀딩 수취 중</div>\
+  </div>\
+</div>',
+    oi: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">ETH OI 분석</span>\
+    <span style="color:#f85149;font-size:13px;font-weight:600;">-1.1%</span>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">\
+      <span style="background:#f8514922;color:#f85149;padding:2px 8px;border-radius:4px;font-size:11px;">가격 ↓</span>\
+      <span style="background:#f8514922;color:#f85149;padding:2px 8px;border-radius:4px;font-size:11px;">OI ↓</span>\
+    </div>\
+    <div style="color:#d29922;font-weight:500;margin-top:4px;">→ 롱 청산 진행 중, 하락 추세 약화</div>\
+  </div>\
+</div>\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;">\
+  <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:4px;">📊 OI Spike 모니터링</div>\
+  <div style="font-size:11px;color:#8b949e;">24h OI 변화: <span style="color:#f85149;font-weight:600;">-1.1%</span> (임계값: 5%)</div>\
+  <div style="font-size:11px;color:#8b949e;margin-top:2px;">상태: <span style="color:#3fb950;">정상 범위</span></div>\
+</div>',
+    liq: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">ETH Liquidation Cluster</span>\
+    <span style="color:#3fb950;font-size:11px;font-weight:600;">안전</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Long Liq Cluster</span><span style="color:#f85149;font-weight:600;">$3,420</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Short Liq Cluster</span><span style="color:#3fb950;font-weight:600;">$4,050</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;">\
+      <span style="color:#8b949e;">현재가</span><span style="color:#c9d1d9;font-weight:600;">$3,790</span>\
+    </div>\
+  </div>\
+  <div style="font-size:11px;color:#8b949e;line-height:1.6;">\
+    Long cluster -9.8% / Short cluster +6.9% — 양쪽 모두 안전 거리\
+  </div>\
+</div>',
+    suggest: '\
+<div style="background:#0d1117;border:1px solid #58a6ff44;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="font-size:13px;font-weight:600;color:#58a6ff;margin-bottom:8px;">🤖 ETH-PERP AI 제안</div>\
+  <div style="font-size:12px;line-height:1.8;color:#c9d1d9;">\
+    ETH 숏 포지션은 안정적입니다 (3/10). 펀딩 수취 중이며 청산 거리도 충분합니다. 목표가 $3,700 도달 시 부분 익절을 고려하세요.\
+  </div>\
+</div>\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;">\
+  <div style="font-size:11px;color:#484f58;margin-bottom:4px;">⚙ Rule Engine 산출 → AI 해석</div>\
+  <div style="font-size:11px;line-height:1.6;color:#8b949e;">\
+    <div>• Risk Score 3/10 (안정적)</div>\
+    <div>• Funding Z-Score -0.4σ (정상 범위)</div>\
+    <div>• 지지선 Pivot S1 $3,720 근접</div>\
+  </div>\
+</div>'
+  },
+  SOL: {
+    risk: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">SOL-PERP 리스크</span>\
+    <span style="background:#d2992233;color:#d29922;padding:3px 10px;border-radius:12px;font-size:13px;font-weight:700;">5/10</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Leverage Risk</span><span style="color:#3fb950;font-weight:600;">1/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Liquidation Risk</span><span style="color:#3fb950;font-weight:600;">0/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Volatility Risk</span><span style="color:#d29922;font-weight:600;">1/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Funding Crowd Risk</span><span style="color:#d29922;font-weight:600;">1/2</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;">\
+      <span style="color:#8b949e;">Concentration Risk</span><span style="color:#f85149;font-weight:600;">2/2</span>\
+    </div>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>⚠ 레버리지 3x — 보통 수준</div>\
+    <div>📊 지지선 $170 이탈 위험</div>\
+    <div>🛡 청산 거리 33.3% ($119)</div>\
+    <div>📈 손실 확대 중 (-3.47%)</div>\
+  </div>\
+</div>\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:6px;">📍 Support / Resistance</div>\
+  <div style="font-size:11px;line-height:1.7;color:#8b949e;">\
+    <div style="display:flex;justify-content:space-between;"><span>7D High</span><span style="color:#f85149;">$182.40</span></div>\
+    <div style="display:flex;justify-content:space-between;"><span>7D Low</span><span style="color:#3fb950;">$168.20</span></div>\
+    <div style="display:flex;justify-content:space-between;"><span>VWAP</span><span style="color:#c9d1d9;">$175.60</span></div>\
+    <div style="display:flex;justify-content:space-between;"><span>Pivot S1</span><span style="color:#3fb950;">$170.00</span></div>\
+  </div>\
+</div>',
+    funding: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">SOL 펀딩 분석</span>\
+    <span style="color:#d29922;font-size:13px;font-weight:600;">+0.032%</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">1h Trend</span><span style="color:#d29922;">↑ +0.004%</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">4h Trend</span><span style="color:#d29922;">↑ +0.006%</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">24h Trend</span><span style="color:#d29922;">↑ +0.010%</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:3px 0;">\
+      <span style="color:#8b949e;">Z-Score</span><span style="color:#d29922;font-weight:600;">+1.6σ</span>\
+    </div>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>📌 Mean Reversion: 평균(0.008%) 대비 4배, 회귀 가능성</div>\
+    <div style="color:#d29922;font-weight:500;margin-top:4px;">💡 롱 포지션 비용 발생 중. 단기 조정 가능성</div>\
+  </div>\
+</div>',
+    oi: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">SOL OI 분석</span>\
+    <span style="color:#f85149;font-size:13px;font-weight:600;">+3.8%</span>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">\
+      <span style="background:#f8514922;color:#f85149;padding:2px 8px;border-radius:4px;font-size:11px;">가격 ↓</span>\
+      <span style="background:#3fb95022;color:#3fb950;padding:2px 8px;border-radius:4px;font-size:11px;">OI ↑</span>\
+    </div>\
+    <div style="color:#f85149;font-weight:500;margin-top:4px;">→ 신규 숏 진입 중, 하락 추세 강화 시그널</div>\
+  </div>\
+</div>\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;">\
+  <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:4px;">📊 OI Spike 모니터링</div>\
+  <div style="font-size:11px;color:#8b949e;">24h OI 변화: <span style="color:#f85149;font-weight:600;">+3.8%</span> (임계값: 5%)</div>\
+  <div style="font-size:11px;color:#d29922;margin-top:2px;">상태: <span style="color:#d29922;">임계값 근접 — 주의</span></div>\
+</div>',
+    liq: '\
+<div style="background:#161b22;border:1px solid #d2992244;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">SOL Liquidation Cluster</span>\
+    <span style="color:#d29922;font-size:11px;font-weight:600;">주의</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Long Liq Cluster</span><span style="color:#f85149;font-weight:600;">$158.00</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">Short Liq Cluster</span><span style="color:#3fb950;font-weight:600;">$185.50</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;">\
+      <span style="color:#8b949e;">현재가</span><span style="color:#c9d1d9;font-weight:600;">$172.30</span>\
+    </div>\
+  </div>\
+  <div style="background:#d2992215;border:1px solid #d2992244;border-radius:6px;padding:8px;">\
+    <div style="font-size:11px;color:#d29922;">Long cluster $158.00 — 현재가 대비 -8.3%</div>\
+    <div style="font-size:11px;color:#8b949e;margin-top:2px;">Short cluster $185.50 — 현재가 대비 +7.7%</div>\
+  </div>\
+  <div style="font-size:11px;color:#8b949e;margin-top:8px;line-height:1.6;">\
+    💡 하락 시 $158 부근 롱 청산 클러스터 주의. 현재 손실 확대 중이므로 청산 가격대 모니터링 필요\
+  </div>\
+</div>',
+    suggest: '\
+<div style="background:#0d1117;border:1px solid #f8514944;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="font-size:13px;font-weight:600;color:#f85149;margin-bottom:8px;">⚠ SOL-PERP AI 제안</div>\
+  <div style="font-size:12px;line-height:1.8;color:#c9d1d9;">\
+    SOL 롱 포지션 손실 확대 중입니다 (5/10). 지지선 $170 이탈 시 손절을 권장합니다. OI 증가와 함께 숏 진입이 늘고 있어 추가 하락 가능성이 있습니다.\
+  </div>\
+</div>\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;">\
+  <div style="font-size:11px;color:#484f58;margin-bottom:4px;">⚙ Rule Engine 산출 → AI 해석</div>\
+  <div style="font-size:11px;line-height:1.6;color:#8b949e;">\
+    <div>• Risk Score 5/10 (보통 — 집중도 위험)</div>\
+    <div>• Funding Z-Score +1.6σ (주의 구간)</div>\
+    <div>• 지지선 $170 이탈 위험</div>\
+    <div>• OI +3.8% 숏 진입 증가</div>\
+  </div>\
+</div>'
+  }
+};
+
+var currentCoin = 'BTC';
+var currentMode = 'position'; // 'position' or 'order'
+
+var marketData = {
+  BTC: { coin: 'BTC-USDC', leverage: '10x', mark: '68,092', oracle: '68,129', change: '+860 / +1.28%', changeColor: '#3fb950', volume: '$3,139,374,717', oi: '$1,847,990,136', funding: '+0.0650%', fundingColor: '#d29922' },
+  ETH: { coin: 'ETH-USDC', leverage: '5x', mark: '3,790', oracle: '3,792', change: '-30 / -0.79%', changeColor: '#f85149', volume: '$1,284,920,445', oi: '$892,340,210', funding: '-0.0120%', fundingColor: '#3fb950' },
+  SOL: { coin: 'SOL-USDC', leverage: '3x', mark: '172.30', oracle: '172.45', change: '-6.20 / -3.47%', changeColor: '#f85149', volume: '$482,190,330', oi: '$312,450,120', funding: '+0.0320%', fundingColor: '#d29922' }
+};
+
+function updateMarket(coin) {
+  var m = marketData[coin];
+  if (!m) return;
+  document.getElementById('market-coin').textContent = m.coin;
+  document.getElementById('market-leverage').textContent = m.leverage;
+  document.getElementById('market-mark').textContent = m.mark;
+  document.getElementById('market-oracle').textContent = m.oracle;
+  var chEl = document.getElementById('market-change');
+  chEl.textContent = m.change;
+  chEl.style.color = m.changeColor;
+  document.getElementById('market-volume').textContent = m.volume;
+  document.getElementById('market-oi').textContent = m.oi;
+  var fEl = document.getElementById('market-funding');
+  fEl.textContent = m.funding;
+  fEl.style.color = m.fundingColor;
+}
+
+var orderData = {
+  BTC: {
+    strategy: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">BTC-PERP 전략 분석</span>\
+    <span style="background:#58a6ff22;color:#58a6ff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">Accumulation</span>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>📌 현재가 $68,100 대비 하방 $65,000에 매수 주문</div>\
+    <div>📌 단일 방향(매수) 주문 — 점진적 매집 패턴</div>\
+    <div style="color:#58a6ff;font-weight:500;margin-top:4px;">💡 지지선 근처에서 추가 매수를 노리는 Accumulation 전략으로 판단됩니다</div>\
+  </div>\
+</div>',
+    exec: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">체결 가능성</span>\
+    <span style="background:#d2992233;color:#d29922;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">Medium</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">현재 시장가</span><span style="color:#c9d1d9;font-weight:600;">$68,100</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">주문 가격</span><span style="color:#3fb950;font-weight:600;">$65,000</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;">\
+      <span style="color:#8b949e;">가격 차이</span><span style="color:#d29922;font-weight:600;">-4.6%</span>\
+    </div>\
+  </div>\
+  <div style="font-size:12px;color:#8b949e;line-height:1.6;">\
+    💡 현재가 대비 4.6% 하방 — 시장 조정 시 체결 가능\
+  </div>\
+</div>',
+    cluster: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;">\
+  <div style="font-size:13px;font-weight:600;margin-bottom:10px;">주문 집중도</div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>📊 $65,000 부근에 매수 주문 집중</div>\
+    <div style="color:#3fb950;font-weight:500;margin-top:4px;">→ Accumulation Zone — 지지선 근처 매집 구간</div>\
+  </div>\
+</div>',
+    impact: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">포지션 영향</span>\
+    <span style="background:#3fb95022;color:#3fb950;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">Position Expansion</span>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>📌 현재 BTC 롱 10x 포지션 보유 중</div>\
+    <div>📌 $65,000 매수 주문 → 같은 방향 추가 진입</div>\
+    <div style="color:#d29922;font-weight:500;margin-top:4px;">⚠ 체결 시 포지션 규모 확대 — 리스크 증가 주의</div>\
+  </div>\
+</div>',
+    suggest: '\
+<div style="background:#0d1117;border:1px solid #58a6ff44;border-radius:8px;padding:12px;">\
+  <div style="font-size:13px;font-weight:600;color:#58a6ff;margin-bottom:8px;">🤖 BTC-PERP 오더 제안</div>\
+  <div style="font-size:12px;line-height:1.8;color:#c9d1d9;">\
+    $65,000 매수 주문은 현재 롱 포지션 확대 주문입니다. 체결 시 레버리지 리스크가 증가하므로, 기존 포지션의 Risk Score(7/10)를 고려하여 주문 수량 조정을 권장합니다.\
+  </div>\
+</div>'
+  },
+  ETH: {
+    strategy: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">ETH-PERP 전략 분석</span>\
+    <span style="background:#3fb95022;color:#3fb950;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">Take Profit</span>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>📌 현재 숏 포지션 보유 중 (진입 $3,820)</div>\
+    <div>📌 $3,700에 매도 지정가 → 숏 익절 주문</div>\
+    <div style="color:#3fb950;font-weight:500;margin-top:4px;">💡 목표가 도달 시 자동 익절되는 Take Profit 전략입니다</div>\
+  </div>\
+</div>',
+    exec: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:10px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">체결 가능성</span>\
+    <span style="background:#3fb95033;color:#3fb950;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">High</span>\
+  </div>\
+  <div style="font-size:11px;margin-bottom:8px;">\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">현재 시장가</span><span style="color:#c9d1d9;font-weight:600;">$3,790</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;">\
+      <span style="color:#8b949e;">주문 가격</span><span style="color:#f85149;font-weight:600;">$3,700</span>\
+    </div>\
+    <div style="display:flex;justify-content:space-between;padding:4px 0;">\
+      <span style="color:#8b949e;">가격 차이</span><span style="color:#3fb950;font-weight:600;">-2.4%</span>\
+    </div>\
+  </div>\
+  <div style="font-size:12px;color:#8b949e;line-height:1.6;">\
+    💡 현재가 대비 2.4% 하방 — 단기 체결 가능성 높음\
+  </div>\
+</div>',
+    cluster: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;">\
+  <div style="font-size:13px;font-weight:600;margin-bottom:10px;">주문 집중도</div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>📊 $3,700 부근에 단일 매도 주문</div>\
+    <div style="color:#8b949e;margin-top:4px;">→ 집중 구간 없음 — 단일 익절 주문</div>\
+  </div>\
+</div>',
+    impact: '\
+<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;">\
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\
+    <span style="font-size:13px;font-weight:600;">포지션 영향</span>\
+    <span style="background:#3fb95022;color:#3fb950;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">Take Profit</span>\
+  </div>\
+  <div style="font-size:12px;line-height:1.8;color:#8b949e;">\
+    <div>📌 현재 ETH 숏 5x 포지션 보유 중</div>\
+    <div>📌 $3,700 매도 주문 → 숏 포지션 익절</div>\
+    <div style="color:#3fb950;font-weight:500;margin-top:4px;">✓ 체결 시 포지션 청산 — 리스크 감소</div>\
+  </div>\
+</div>',
+    suggest: '\
+<div style="background:#0d1117;border:1px solid #58a6ff44;border-radius:8px;padding:12px;">\
+  <div style="font-size:13px;font-weight:600;color:#58a6ff;margin-bottom:8px;">🤖 ETH-PERP 오더 제안</div>\
+  <div style="font-size:12px;line-height:1.8;color:#c9d1d9;">\
+    $3,700 매도 주문은 숏 포지션의 익절 주문입니다. 현재가 $3,790에서 2.4% 하방으로 체결 가능성이 높습니다. 포지션 Risk Score(3/10)가 안정적이므로 현재 전략 유지를 권장합니다.\
+  </div>\
+</div>'
+  }
+};
+
+var positionTabs = [
+  { id: 'risk', label: '리스크' },
+  { id: 'funding', label: '펀딩' },
+  { id: 'oi', label: 'OI' },
+  { id: 'liq', label: '청산' },
+  { id: 'suggest', label: '제안' }
+];
+var orderTabs = [
+  { id: 'order-strategy', label: '전략' },
+  { id: 'order-exec', label: '체결' },
+  { id: 'order-cluster', label: '집중도' },
+  { id: 'order-impact', label: '영향' },
+  { id: 'order-suggest', label: '제안' }
+];
+
+function setAiTabs(tabs) {
+  var header = document.getElementById('ai-tab-header');
+  header.innerHTML = '';
+  tabs.forEach(function(t, i) {
+    var div = document.createElement('div');
+    div.className = 'tab' + (i === 0 ? ' active' : '');
+    div.textContent = t.label;
+    div.onclick = function() { showAiTab(t.id, div); };
+    header.appendChild(div);
+  });
+}
+
+function selectOrder(coin) {
+  currentCoin = coin;
+  currentMode = 'order';
+  document.querySelectorAll('.position-card').forEach(function(c) {
+    c.style.border = '1px solid #30363d';
+  });
+  event.currentTarget.style.border = '2px solid #58a6ff';
+  // 마켓 헤더 갱신
+  updateMarket(coin);
+  // 오더 분석 탭으로 전환
+  setAiTabs(orderTabs);
+  var d = orderData[coin];
+  // 모든 탭 숨기기
+  document.querySelectorAll('.ai-tab-content').forEach(function(c) { c.style.display = 'none'; });
+  document.getElementById('ai-order-strategy').innerHTML = d.strategy;
+  document.getElementById('ai-order-exec').innerHTML = d.exec;
+  document.getElementById('ai-order-cluster').innerHTML = d.cluster;
+  document.getElementById('ai-order-impact').innerHTML = d.impact;
+  document.getElementById('ai-order-suggest').innerHTML = d.suggest;
+  document.getElementById('ai-order-strategy').style.display = 'block';
+}
+
+function showAiTab(id, el) {
+  document.querySelectorAll('.ai-tab-content').forEach(function(c) { c.style.display = 'none'; });
+  document.getElementById('ai-' + id).style.display = 'block';
+  el.parentElement.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+function selectCoin(coin) {
+  currentCoin = coin;
+  currentMode = 'position';
+  // 카드 선택 하이라이트
+  document.querySelectorAll('.position-card').forEach(function(c) {
+    c.style.border = '1px solid #30363d';
+  });
+  event.currentTarget.style.border = '2px solid #58a6ff';
+  // 마켓 헤더 갱신
+  updateMarket(coin);
+  // 포지션 분석 탭으로 전환
+  setAiTabs(positionTabs);
+  // 모든 탭 숨기기
+  document.querySelectorAll('.ai-tab-content').forEach(function(c) { c.style.display = 'none'; });
+  // AI 탭 데이터 갱신
+  var d = coinData[coin];
+  document.getElementById('ai-risk').innerHTML = d.risk;
+  document.getElementById('ai-funding').innerHTML = d.funding;
+  document.getElementById('ai-oi').innerHTML = d.oi;
+  document.getElementById('ai-liq').innerHTML = d.liq;
+  document.getElementById('ai-suggest').innerHTML = d.suggest;
+  document.getElementById('ai-risk').style.display = 'block';
+}
+
+function pickExchange(name, color) {
+  document.getElementById('selected-exchange').textContent = name;
+  document.querySelector('.exchange-selector .exchange-dropdown').classList.remove('show');
+  var dot = document.querySelector('.exchange-selector div > span:first-child');
+  if (dot) dot.style.background = color;
+}
+
+function selectPeriod(el, period) {
+  document.querySelectorAll('.period-btn').forEach(function(b) {
+    b.style.background = '#30363d'; b.style.color = '#8b949e'; b.style.fontWeight = 'normal';
+  });
+  el.style.background = '#58a6ff22'; el.style.color = '#58a6ff'; el.style.fontWeight = '600';
+  var d = periodData[period];
+  document.getElementById('realized-pnl').textContent = d.pnl;
+  document.getElementById('volume-val').textContent = d.volume;
+}
+
+function showBottomTab(id, el) {
+  document.querySelectorAll('.bottom-tab-content').forEach(function(c) { c.style.display = 'none'; });
+  document.getElementById('bottom-' + id).style.display = 'block';
+  el.parentElement.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+// 외부 클릭 시 드롭다운 닫기
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.exchange-selector')) {
+    var dd = document.querySelector('.exchange-dropdown');
+    if (dd) dd.classList.remove('show');
+  }
+});
+
+// 초기 로드
+document.addEventListener('DOMContentLoaded', function() {
+  var d = coinData['BTC'];
+  document.getElementById('ai-risk').innerHTML = d.risk;
+  document.getElementById('ai-funding').innerHTML = d.funding;
+  document.getElementById('ai-oi').innerHTML = d.oi;
+  document.getElementById('ai-liq').innerHTML = d.liq;
+  document.getElementById('ai-suggest').innerHTML = d.suggest;
+});
+</script>
+</body>
+</html>
