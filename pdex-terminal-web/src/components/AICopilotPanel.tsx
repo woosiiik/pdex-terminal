@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore } from '@/stores/useStore';
 import type {
   AIInterpretation,
@@ -153,12 +154,37 @@ function LoadingSkeleton() {
 // ── Inline Tooltip ──
 
 function Tip({ text, children }: { text: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const ref = useRef<HTMLSpanElement>(null);
+
+  const handleEnter = useCallback(() => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setPos({ x: rect.left + rect.width / 2, y: rect.top });
+    }
+    setShow(true);
+  }, []);
+
+  const handleLeave = useCallback(() => setShow(false), []);
+
   return (
-    <span className="relative group/tip cursor-help">
+    <span
+      ref={ref}
+      className="cursor-help"
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+    >
       {children}
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 rounded-md bg-[#1c2128] border border-[#30363d] text-[10px] leading-[1.5] text-[#c9d1d9] whitespace-pre-wrap w-[180px] text-center opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 shadow-lg">
-        {text}
-      </span>
+      {show && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{ left: pos.x, top: pos.y }}
+          className="fixed -translate-x-1/2 -translate-y-full pointer-events-none px-2.5 py-1.5 mb-1.5 rounded-md bg-[#1c2128] border border-[#30363d] text-[10px] leading-[1.5] text-[#c9d1d9] w-[200px] text-center z-[9999] shadow-lg"
+        >
+          {text}
+        </div>,
+        document.body,
+      )}
     </span>
   );
 }
