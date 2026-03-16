@@ -4,6 +4,8 @@ import type {
   FundingAnalysisResponse,
   OIAnalysisResponse,
   LiquidationAnalysisResponse,
+  OrderAnalysisRequest,
+  OrderAnalysisResponse,
   HealthResponse,
   ErrorResponse,
 } from '@/lib/types';
@@ -104,6 +106,16 @@ export function analyzeLiquidation(
 ): Promise<LiquidationAnalysisResponse> {
   return post<LiquidationAnalysisResponse>('/api/v1/analysis/liquidation', {
     symbol,
+  });
+}
+
+export function analyzeOrder(
+  request: OrderAnalysisRequest,
+): Promise<OrderAnalysisResponse> {
+  return post<OrderAnalysisResponse>('/api/v1/analysis/order', {
+    orders: request.orders,
+    positions: request.positions,
+    symbol: request.symbol,
   });
 }
 

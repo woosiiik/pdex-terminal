@@ -7,14 +7,17 @@ import { calculateSupportResistance } from "../rule-engine/sr-calculator.js";
 import { analyzeFunding } from "../rule-engine/funding-analyzer.js";
 import { analyzeOI } from "../rule-engine/oi-analyzer.js";
 import { analyzeLiquidationClusters } from "../rule-engine/liquidation-analyzer.js";
-import { interpretPositionAnalysis, interpretFunding, interpretOI, interpretLiquidation } from "../ai-engine/index.js";
+import { interpretPositionAnalysis, interpretFunding, interpretOI, interpretLiquidation, interpretOrderAnalysis } from "../ai-engine/index.js";
 import type {
   OpenPosition,
+  OpenOrder,
   DataFreshness,
   PositionAnalysisResponse,
   FundingAnalysisResponse,
   OIAnalysisResponse,
   LiquidationAnalysisResponse,
+  OrderAnalysisResponse,
+  OrderAnalysisRuleEngineResults,
   RuleEngineResults,
 } from "../types/index.js";
 
@@ -105,7 +108,11 @@ async function runPositionAnalysis(
     Promise.resolve(calculateSupportResistance(candles7dRes.data, candles30dRes.data, recentCandlesRes.data)),
     Promise.resolve(analyzeFunding(fundingRate, rates30d, rates1h, rates4h, rates24h)),
     Promise.resolve(analyzeOI(oiRes.data.openInterest, previousOI, currentPrice, previousPrice)),
-    Promise.resolve(analyzeLiquidationClusters(currentPrice, [])), // No liquidation data source in MVP
+    Promise.resolve(analyzeLiquidationClusters(currentPrice, positions.map((p) => ({
+      priceLevel: p.liquidationPrice,
+      estimatedVolume: p.size * p.entryPrice,
+      side: p.side as "long" | "short",
+    })))),
   ]);
 
   // Use first position's risk score as primary (multi-position: take highest)
@@ -260,6 +267,71 @@ async function runLiquidationAnalysis(symbol: string): Promise<LiquidationAnalys
     symbol,
     dataFreshness: priceRes.freshness,
     ruleEngine: result,
+    aiInterpretation,
+  };
+}
+
+// ============================================================
+// Order Analysis
+// ============================================================
+
+export async function analyzeOrder(
+  orders: OpenOrder[],
+  positions: OpenPosition[],
+  symbol: string,
+): Promise<OrderAnalysisResponse> {
+  return withTimeout(runOrderAnalysis(orders, positions, symbol), config.analysisTimeout, "Order analysis");
+}
+
+async function runOrderAnalysis(
+  orders: OpenOrder[],
+  positions: OpenPosition[],
+  symbol: string,
+): Promise<OrderAnalysisResponse> {
+  // 1. Fetch market data in parallel
+  const [priceRes, recentCandlesRes, fundingRateRes, l2BookRes] = await Promise.all([
+    mds.getPrice(symbol),
+    mds.getCandles(symbol, "1d", 1),
+    mds.getFundingRate(symbol),
+    mds.getL2Book(symbol).catch(() => null),
+  ]);
+
+  const currentPrice = priceRes.data;
+  const volatility24h = computeVolatility(recentCandlesRes.data, currentPrice);
+  const fundingRate = fundingRateRes.data;
+
+  const marketCtx: import("../types/index.js").OrderMarketContext = {
+    volatility24h,
+    fundingRate,
+    l2Book: l2BookRes?.data ?? null,
+  };
+
+  const symbolOrders = orders.filter((o) => o.coin === symbol);
+
+  // 2. Run Rule Engine modules in parallel with market context
+  const [strategy, executionProbability, orderClusters, positionImpact] = await Promise.all([
+    Promise.resolve((await import("../rule-engine/strategy-detector.js")).detectStrategy(symbolOrders, currentPrice, marketCtx)),
+    Promise.resolve((await import("../rule-engine/execution-probability.js")).analyzeExecutionProbability(symbolOrders, currentPrice, marketCtx)),
+    Promise.resolve((await import("../rule-engine/order-cluster-analyzer.js")).analyzeOrderClusters(symbolOrders, currentPrice)),
+    Promise.resolve((await import("../rule-engine/position-impact-analyzer.js")).analyzePositionImpact(symbolOrders, positions, currentPrice)),
+  ]);
+
+  const ruleEngine: OrderAnalysisRuleEngineResults = { strategy, executionProbability, orderClusters, positionImpact };
+
+  let aiInterpretation = null;
+  try {
+    aiInterpretation = await interpretOrderAnalysis(ruleEngine, symbol);
+  } catch {
+    console.error("AI order interpretation failed");
+  }
+
+  saveAnalysisResult(symbol, "order", ruleEngine, aiInterpretation ? JSON.stringify(aiInterpretation) : null).catch(() => {});
+
+  return {
+    success: true,
+    timestamp: new Date().toISOString(),
+    symbol,
+    ruleEngine,
     aiInterpretation,
   };
 }

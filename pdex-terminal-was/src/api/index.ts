@@ -1,11 +1,12 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { validate, positionAnalysisRequestSchema, symbolRequestSchema } from "../validators/index.js";
+import { validate, positionAnalysisRequestSchema, symbolRequestSchema, orderAnalysisRequestSchema } from "../validators/index.js";
 import {
   analyzePosition,
   analyzeFundingStandalone,
   analyzeOIStandalone,
   analyzeLiquidationStandalone,
+  analyzeOrder,
 } from "../orchestrator/index.js";
 import { getRedis } from "../data/cache.js";
 import { getPool } from "../data/db.js";
@@ -77,6 +78,24 @@ router.post(
     try {
       const { symbol } = req.body;
       const result = await analyzeLiquidationStandalone(symbol);
+      res.json(result);
+    } catch (err) {
+      handleError(res, err);
+    }
+  },
+);
+
+// ============================================================
+// POST /api/v1/analysis/order
+// ============================================================
+
+router.post(
+  "/analysis/order",
+  validate(orderAnalysisRequestSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { orders, positions, symbol } = req.body;
+      const result = await analyzeOrder(orders, positions, symbol);
       res.json(result);
     } catch (err) {
       handleError(res, err);

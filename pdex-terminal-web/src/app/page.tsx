@@ -10,7 +10,7 @@ import BottomBar from '@/components/BottomBar';
 import { useStore } from '@/stores/useStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { getCandleSnapshot, getL2Book } from '@/lib/hyperliquid-api';
-import { analyzePosition } from '@/lib/analysis-api';
+import { analyzePosition, analyzeOrder } from '@/lib/analysis-api';
 import type { OpenPosition } from '@/lib/types';
 
 function isValidWalletAddress(address: string): boolean {
@@ -131,6 +131,7 @@ function ConnectedLayout() {
   const setOrderbook = useStore((s) => s.setOrderbook);
   const setAnalysisLoading = useStore((s) => s.setAnalysisLoading);
   const setPositionAnalysis = useStore((s) => s.setPositionAnalysis);
+  const setOrderAnalysis = useStore((s) => s.setOrderAnalysis);
   const addAlert = useStore((s) => s.addAlert);
 
   // Connect WebSocket for real-time data
@@ -238,6 +239,55 @@ function ConnectedLayout() {
           message: `분석 실패: ${err instanceof Error ? err.message : 'Unknown error'}`,
         });
         setPositionAnalysis(null);
+      })
+      .finally(() => {
+        setAnalysisLoading(false);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCoin, selectedMode]);
+
+  // Trigger WAS order analysis when selectedCoin changes AND mode is order
+  useEffect(() => {
+    if (!selectedCoin || selectedMode !== 'order') {
+      return;
+    }
+
+    const currentOrders = useStore.getState().orders;
+    if (currentOrders.length === 0) {
+      setOrderAnalysis(null);
+      return;
+    }
+
+    const symbolOrders = currentOrders.filter((o) => o.coin === selectedCoin);
+    if (symbolOrders.length === 0) {
+      setOrderAnalysis(null);
+      return;
+    }
+
+    setAnalysisLoading(true);
+
+    const currentPositions = useStore.getState().positions;
+    const openPositions: OpenPosition[] = currentPositions.map((p) => ({
+      coin: p.coin,
+      side: p.side,
+      entryPrice: p.entryPrice,
+      size: p.size,
+      leverage: p.leverage,
+      liquidationPrice: p.liquidationPrice,
+      marginUsed: p.marginUsed,
+    }));
+
+    analyzeOrder({ orders: symbolOrders, positions: openPositions, symbol: selectedCoin })
+      .then((res) => {
+        setOrderAnalysis(res);
+      })
+      .catch((err) => {
+        addAlert({
+          type: 'error',
+          timestamp: Date.now(),
+          message: `오더 분석 실패: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        });
+        setOrderAnalysis(null);
       })
       .finally(() => {
         setAnalysisLoading(false);

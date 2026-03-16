@@ -1,8 +1,15 @@
 # PDEX Analysis Server
 
-Open Position 분석을 위한 Node.js + TypeScript 백엔드 서비스.
+Open Position / Open Order 분석을 위한 Node.js + TypeScript 백엔드 서비스.
 
-Hyperliquid 마켓 데이터 기반으로 Risk Score, Support/Resistance, Funding Rate, Open Interest, Liquidation Cluster 분석을 수행하고, Gemini AI가 한국어로 해석해준다.
+Hyperliquid 마켓 데이터 기반으로 Risk Score, Support/Resistance, Funding Rate, Open Interest, Liquidation Cluster, 주문 전략/체결/집중도/영향 분석을 수행하고, Gemini AI가 한국어로 해석해준다.
+
+## 목차
+
+- [사전 요구사항](#사전-요구사항)
+- [로컬 실행](#로컬-실행)
+- [API 엔드포인트](#api-엔드포인트)
+- [배포](#배포)
 
 ## 사전 요구사항
 
@@ -11,7 +18,7 @@ Hyperliquid 마켓 데이터 기반으로 Risk Score, Support/Resistance, Fundin
 
 ## 로컬 실행
 
-### 1. 인프라 실행 (Redis + PostgreSQL)
+### 1. 인프라 실행 (Redis + MySQL)
 
 ```bash
 docker compose up -d
@@ -32,12 +39,12 @@ npm install
 npm run dev
 ```
 
-서버가 `http://localhost:3000`에서 실행된다.
+서버가 `http://localhost:4000`에서 실행된다.
 
 ### 4. 동작 확인
 
 ```bash
-curl http://localhost:3000/api/v1/health
+curl http://localhost:4000/api/v1/health
 ```
 
 ## API 엔드포인트
@@ -45,6 +52,7 @@ curl http://localhost:3000/api/v1/health
 | Method | Path | 설명 |
 |--------|------|------|
 | POST | `/api/v1/analysis/position` | 포지션 종합 분석 |
+| POST | `/api/v1/analysis/order` | 오더 종합 분석 |
 | POST | `/api/v1/analysis/funding` | 펀딩 레이트 분석 |
 | POST | `/api/v1/analysis/oi` | Open Interest 분석 |
 | POST | `/api/v1/analysis/liquidation` | Liquidation Cluster 분석 |

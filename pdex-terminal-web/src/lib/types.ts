@@ -222,6 +222,96 @@ export interface OpenPosition {
 }
 
 // ============================================================
+// WAS Order Analysis Response Types
+// ============================================================
+
+export type StrategyType = 'grid' | 'range' | 'breakout' | 'accumulation' | 'unknown';
+
+export interface StrategyDetectionResult {
+  detectedStrategy: StrategyType;
+  confidence: 'high' | 'medium' | 'low';
+  description: string;
+  orderCount: number;
+  priceRange: { min: number; max: number };
+  buyCount: number;
+  sellCount: number;
+}
+
+export type ExecutionProbabilityLevel = 'high' | 'medium' | 'low';
+
+export interface ExecutionProbabilityItem {
+  coin: string;
+  side: 'buy' | 'sell';
+  price: number;
+  size: number;
+  distancePercent: number;
+  probability: ExecutionProbabilityLevel;
+}
+
+export interface ExecutionProbabilityResult {
+  items: ExecutionProbabilityItem[];
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+}
+
+export type ClusterType = 'sell_wall' | 'accumulation_zone' | 'distribution_zone';
+
+export interface OrderCluster {
+  priceLevel: number;
+  totalSize: number;
+  orderCount: number;
+  side: 'buy' | 'sell';
+  clusterType: ClusterType;
+  distancePercent: number;
+}
+
+export interface OrderClusterResult {
+  clusters: OrderCluster[];
+  dominantSide: 'buy' | 'sell' | 'balanced';
+}
+
+export type OrderPurpose = 'take_profit' | 'stop_loss' | 'hedging' | 'position_expansion' | 'new_entry';
+
+export interface PositionImpactItem {
+  coin: string;
+  orderSide: 'buy' | 'sell';
+  orderPrice: number;
+  orderSize: number;
+  purpose: OrderPurpose;
+  description: string;
+}
+
+export interface PositionImpactResult {
+  items: PositionImpactItem[];
+  hasRiskReduction: boolean;
+  hasRiskIncrease: boolean;
+}
+
+export interface OrderAnalysisRuleEngineResults {
+  strategy: StrategyDetectionResult;
+  executionProbability: ExecutionProbabilityResult;
+  orderClusters: OrderClusterResult;
+  positionImpact: PositionImpactResult;
+}
+
+export interface OrderAnalysisAIInterpretation {
+  strategyInterpretation: string;
+  executionInterpretation: string;
+  clusterInterpretation: string;
+  impactInterpretation: string;
+  overallSummary: string;
+}
+
+export interface OrderAnalysisResponse {
+  success: boolean;
+  timestamp: string;
+  symbol: string;
+  ruleEngine: OrderAnalysisRuleEngineResults;
+  aiInterpretation: OrderAnalysisAIInterpretation | null;
+}
+
+// ============================================================
 // WAS API Request Types
 // ============================================================
 
@@ -230,6 +320,12 @@ export interface PositionAnalysisRequest {
   symbol: string;
   userAddress?: string;
   exchange?: string;
+}
+
+export interface OrderAnalysisRequest {
+  orders: Order[];
+  positions: OpenPosition[];
+  symbol: string;
 }
 
 // ============================================================

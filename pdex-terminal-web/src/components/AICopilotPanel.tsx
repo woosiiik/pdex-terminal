@@ -6,10 +6,12 @@ import { useStore } from '@/stores/useStore';
 import type {
   AIInterpretation,
   RuleEngineResults,
+  OrderAnalysisRuleEngineResults,
+  OrderAnalysisAIInterpretation,
 } from '@/lib/types';
 
 type PositionTabId = 'risk' | 'funding' | 'oi' | 'liq' | 'suggest';
-type OrderTabId = 'order-strategy' | 'order-execution' | 'order-concentration' | 'order-impact' | 'order-suggest';
+type OrderTabId = 'order-strategy' | 'order-execution' | 'order-concentration' | 'order-impact' | 'order-suggest' | 'order-change';
 
 const POSITION_TABS: { id: PositionTabId; label: string; tooltip: string }[] = [
   { id: 'risk', label: '리스크', tooltip: '레버리지, 청산거리, 변동성, 펀딩, 집중도를 종합한 위험도 점수 (0~10)' },
@@ -20,17 +22,19 @@ const POSITION_TABS: { id: PositionTabId; label: string; tooltip: string }[] = [
 ];
 
 const ORDER_TABS: { id: OrderTabId; label: string; tooltip: string }[] = [
-  { id: 'order-strategy', label: '전략', tooltip: '오더 전략 분석 (준비 중)' },
-  { id: 'order-execution', label: '체결', tooltip: '체결 가능성 분석 (준비 중)' },
-  { id: 'order-concentration', label: '집중도', tooltip: '오더 집중도 분석 (준비 중)' },
-  { id: 'order-impact', label: '영향', tooltip: '시장 영향 분석 (준비 중)' },
-  { id: 'order-suggest', label: '제안', tooltip: '오더 제안 (준비 중)' },
+  { id: 'order-strategy', label: '전략', tooltip: '주문 가격 분포와 방향성 기반 트레이딩 전략 패턴 탐지' },
+  { id: 'order-execution', label: '체결', tooltip: '현재 시장가 대비 주문 가격 거리 기반 체결 가능성 평가' },
+  { id: 'order-concentration', label: '집중도', tooltip: '특정 가격대 주문 밀집 구간 탐지 및 전략적 의미 분석' },
+  { id: 'order-impact', label: '영향', tooltip: '미체결 주문이 현재 포지션 리스크에 미치는 영향 분석' },
+  { id: 'order-suggest', label: '제안', tooltip: '오더 분석 종합 요약 및 제안' },
+  { id: 'order-change', label: '변경', tooltip: '주문 수정/취소/재배치 이벤트 기반 전략 변경 탐지 (준비 중)' },
 ];
 
 export default function AICopilotPanel() {
   const [positionTab, setPositionTab] = useState<PositionTabId>('risk');
   const [orderTab, setOrderTab] = useState<OrderTabId>('order-strategy');
   const positionAnalysis = useStore((s) => s.positionAnalysis);
+  const orderAnalysis = useStore((s) => s.orderAnalysis);
   const analysisLoading = useStore((s) => s.analysisLoading);
   const selectedCoin = useStore((s) => s.selectedCoin);
   const selectedMode = useStore((s) => s.selectedMode);
@@ -46,13 +50,32 @@ export default function AICopilotPanel() {
     );
   }
 
-  // Order mode — show coming soon tabs
+  // Order mode
   if (selectedMode === 'order') {
+    if (analysisLoading) {
+      return (
+        <div className="flex flex-col h-full">
+          <TabHeader tabs={ORDER_TABS} activeTab={orderTab} onTabChange={setOrderTab} />
+          <div className="flex-1 p-3 space-y-3">
+            <LoadingSkeleton />
+          </div>
+        </div>
+      );
+    }
+
+    const orderRE = orderAnalysis?.ruleEngine ?? null;
+    const orderAI = orderAnalysis?.aiInterpretation ?? null;
+
     return (
       <div className="flex flex-col h-full">
         <TabHeader tabs={ORDER_TABS} activeTab={orderTab} onTabChange={setOrderTab} />
         <div className="flex-1 p-3 overflow-y-auto">
-          <ComingSoon coin={selectedCoin} />
+          {orderTab === 'order-strategy' && <OrderStrategyTab ruleEngine={orderRE} ai={orderAI} />}
+          {orderTab === 'order-execution' && <OrderExecutionTab ruleEngine={orderRE} ai={orderAI} />}
+          {orderTab === 'order-concentration' && <OrderClusterTab ruleEngine={orderRE} ai={orderAI} />}
+          {orderTab === 'order-impact' && <OrderImpactTab ruleEngine={orderRE} ai={orderAI} />}
+          {orderTab === 'order-suggest' && <OrderSuggestTab ruleEngine={orderRE} ai={orderAI} />}
+          {orderTab === 'order-change' && <OrderChangeComingSoon />}
         </div>
       </div>
     );
@@ -87,28 +110,10 @@ export default function AICopilotPanel() {
   );
 }
 
-// ── Coming Soon (Order Analysis) ──
-
-function ComingSoon({ coin }: { coin: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 py-12">
-      <div className="text-[40px] opacity-30 select-none">🚧</div>
-      <div className="text-center">
-        <div className="text-[13px] font-semibold text-[#c9d1d9] mb-1">
-          {coin}-PERP 오더 분석
-        </div>
-        <div className="text-[12px] text-[#8b949e] leading-relaxed">
-          오픈 오더 분석 기능은 준비 중입니다
-        </div>
-        <div className="text-[11px] text-[#484f58] mt-3">Coming Soon</div>
-      </div>
-    </div>
-  );
-}
-
-// ── Tab Header ──
+// ── Suggest Tab ──
 
 function TabHeader<T extends string>({ tabs, activeTab, onTabChange }: { tabs: { id: T; label: string; tooltip?: string }[]; activeTab: T; onTabChange: (t: T) => void }) {
+  const compact = tabs.length > 5;
   return (
     <div className="flex bg-[#161b22] border-b border-[#30363d] shrink-0">
       {tabs.map((tab) => (
@@ -117,7 +122,7 @@ function TabHeader<T extends string>({ tabs, activeTab, onTabChange }: { tabs: {
           type="button"
           onClick={() => onTabChange(tab.id)}
           title={tab.tooltip}
-          className={`px-4 py-2.5 text-xs cursor-pointer border-b-2 transition-colors ${
+          className={`${compact ? 'px-2' : 'px-4'} py-2.5 text-xs cursor-pointer border-b-2 transition-colors whitespace-nowrap ${
             activeTab === tab.id
               ? 'text-[#58a6ff] border-[#58a6ff]'
               : 'text-[#8b949e] border-transparent hover:text-[#c9d1d9]'
@@ -525,5 +530,266 @@ function SuggestTab({ ruleEngine, ai }: { ruleEngine: RuleEngineResults | null; 
         </div>
       </Card>
     </>
+  );
+}
+
+// ============================================================
+// Order Analysis Tabs
+// ============================================================
+
+const STRATEGY_LABELS: Record<string, string> = {
+  grid: '그리드 트레이딩',
+  range: '레인지 트레이딩',
+  breakout: '돌파 전략',
+  accumulation: '매집 전략',
+  unknown: '미탐지',
+};
+
+const CONFIDENCE_LABELS: Record<string, { label: string; color: string }> = {
+  high: { label: '높음', color: 'bg-[#3fb95033] text-[#3fb950]' },
+  medium: { label: '보통', color: 'bg-[#d2992233] text-[#d29922]' },
+  low: { label: '낮음', color: 'bg-[#f8514933] text-[#f85149]' },
+};
+
+const PROB_COLORS: Record<string, string> = {
+  high: 'text-[#3fb950]',
+  medium: 'text-[#d29922]',
+  low: 'text-[#f85149]',
+};
+
+const PURPOSE_LABELS: Record<string, { label: string; icon: string }> = {
+  take_profit: { label: '익절', icon: '💰' },
+  stop_loss: { label: '손절', icon: '🛑' },
+  hedging: { label: '헤지', icon: '🛡️' },
+  position_expansion: { label: '추가 진입', icon: '📈' },
+  new_entry: { label: '신규 진입', icon: '🆕' },
+};
+
+// ── Order Strategy Tab ──
+
+function OrderStrategyTab({ ruleEngine, ai }: { ruleEngine: OrderAnalysisRuleEngineResults | null; ai: OrderAnalysisAIInterpretation | null }) {
+  if (!ruleEngine) return <NoDataMessage />;
+  const s = ruleEngine.strategy;
+  const conf = CONFIDENCE_LABELS[s.confidence];
+
+  return (
+    <Card>
+      <div className="flex justify-between items-center mb-2.5">
+        <span className="text-[13px] font-semibold">전략 탐지</span>
+        <span className={`${conf.color} px-2.5 py-0.5 rounded-xl text-[11px] font-semibold`}>
+          {STRATEGY_LABELS[s.detectedStrategy]}
+        </span>
+      </div>
+      <div className="text-[12px] text-[#c9d1d9] mb-2">{s.description}</div>
+      <div className="text-[11px] space-y-0">
+        <div className="flex justify-between py-[3px] border-b border-[#21262d]">
+          <span className="text-[#8b949e]"><Tip text="현재 미체결 주문 총 개수">주문 수 ⓘ</Tip></span>
+          <span className="text-[#c9d1d9]">{s.orderCount}개</span>
+        </div>
+        <div className="flex justify-between py-[3px] border-b border-[#21262d]">
+          <span className="text-[#8b949e]"><Tip text="매수/매도 주문 비율. 방향성 편향 판단 기준">매수 / 매도 ⓘ</Tip></span>
+          <span className="text-[#c9d1d9]">{s.buyCount} / {s.sellCount}</span>
+        </div>
+        <div className="flex justify-between py-[3px] border-b border-[#21262d]">
+          <span className="text-[#8b949e]"><Tip text="주문이 분포된 최저~최고 가격. 전략 범위 파악">가격 범위 ⓘ</Tip></span>
+          <span className="text-[#c9d1d9]">${s.priceRange.min.toLocaleString()} ~ ${s.priceRange.max.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between py-[3px]">
+          <span className="text-[#8b949e]"><Tip text="전략 패턴 매칭 신뢰도. 주문 수와 분포 균일성 기반">신뢰도 ⓘ</Tip></span>
+          <span className={conf.color.split(' ')[1]}>{conf.label}</span>
+        </div>
+      </div>
+      {ai?.strategyInterpretation && <InterpretationBox text={ai.strategyInterpretation} />}
+    </Card>
+  );
+}
+
+// ── Order Execution Tab ──
+
+function OrderExecutionTab({ ruleEngine, ai }: { ruleEngine: OrderAnalysisRuleEngineResults | null; ai: OrderAnalysisAIInterpretation | null }) {
+  if (!ruleEngine) return <NoDataMessage />;
+  const ep = ruleEngine.executionProbability;
+
+  return (
+    <>
+      <Card>
+        <div className="text-[13px] font-semibold mb-2.5">체결 가능성 요약</div>
+        <div className="flex gap-2 mb-2.5">
+          <span className="text-[11px] px-2 py-0.5 rounded bg-[#3fb95022] text-[#3fb950]">High {ep.highCount}</span>
+          <span className="text-[11px] px-2 py-0.5 rounded bg-[#d2992222] text-[#d29922]">Medium {ep.mediumCount}</span>
+          <span className="text-[11px] px-2 py-0.5 rounded bg-[#f8514922] text-[#f85149]">Low {ep.lowCount}</span>
+        </div>
+        <div className="text-[11px] space-y-0.5">
+          {ep.items.map((item, i) => (
+            <div key={i} className="flex justify-between py-[3px] border-b border-[#21262d] last:border-0">
+              <span className="text-[#8b949e]">
+                <Tip text={`현재가 대비 ${Math.abs(item.distancePercent).toFixed(1)}% ${item.distancePercent >= 0 ? '위' : '아래'}. 거리가 가까울수록 체결 가능성 높음`}>
+                  {item.side === 'buy' ? '매수' : '매도'} ${item.price.toLocaleString()} ⓘ
+                </Tip>
+              </span>
+              <span className={PROB_COLORS[item.probability]}>
+                {item.distancePercent >= 0 ? '+' : ''}{item.distancePercent.toFixed(1)}%
+              </span>
+            </div>
+          ))}
+        </div>
+        {ai?.executionInterpretation && <InterpretationBox text={ai.executionInterpretation} />}
+      </Card>
+    </>
+  );
+}
+
+// ── Order Cluster Tab ──
+
+function OrderClusterTab({ ruleEngine, ai }: { ruleEngine: OrderAnalysisRuleEngineResults | null; ai: OrderAnalysisAIInterpretation | null }) {
+  if (!ruleEngine) return <NoDataMessage />;
+  const oc = ruleEngine.orderClusters;
+
+  const CLUSTER_LABELS: Record<string, string> = {
+    sell_wall: '매도벽',
+    accumulation_zone: '매집 구간',
+    distribution_zone: '분배 구간',
+  };
+
+  return (
+    <Card>
+      <div className="flex justify-between items-center mb-2.5">
+        <span className="text-[13px] font-semibold">주문 집중도</span>
+        <span className="text-[11px] text-[#8b949e]">
+          <Tip text="매수/매도 주문 볼륨 비교. 한쪽이 60% 이상이면 우세로 판단">우세 ⓘ</Tip>: {oc.dominantSide === 'buy' ? '매수' : oc.dominantSide === 'sell' ? '매도' : '균형'}
+        </span>
+      </div>
+      {oc.clusters.length === 0 ? (
+        <div className="text-[11px] text-[#484f58]">집중 구간 없음 (2개 이상 주문 밀집 필요)</div>
+      ) : (
+        <div className="text-[11px] space-y-2">
+          {oc.clusters.map((c, i) => (
+            <div key={i} className="bg-[#0d1117] rounded p-2">
+              <div className="flex justify-between mb-1">
+                <span className="text-[#c9d1d9] font-semibold">${c.priceLevel.toLocaleString()}</span>
+                <span className={c.side === 'buy' ? 'text-[#3fb950]' : 'text-[#f85149]'}>
+                  <Tip text={c.clusterType === 'sell_wall' ? '대량 매도 주문이 집중된 저항 구간' : c.clusterType === 'accumulation_zone' ? '매수 주문이 집중된 매집 구간' : '매도 주문이 분산 배치된 분배 구간'}>
+                    {CLUSTER_LABELS[c.clusterType]} ⓘ
+                  </Tip>
+                </span>
+              </div>
+              <div className="flex justify-between text-[#8b949e]">
+                <span>{c.orderCount}개 주문</span>
+                <span>{c.distancePercent >= 0 ? '+' : ''}{c.distancePercent.toFixed(1)}% 거리</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {ai?.clusterInterpretation && <InterpretationBox text={ai.clusterInterpretation} />}
+    </Card>
+  );
+}
+
+// ── Order Impact Tab ──
+
+function OrderImpactTab({ ruleEngine, ai }: { ruleEngine: OrderAnalysisRuleEngineResults | null; ai: OrderAnalysisAIInterpretation | null }) {
+  if (!ruleEngine) return <NoDataMessage />;
+  const pi = ruleEngine.positionImpact;
+
+  return (
+    <>
+      <Card>
+        <div className="text-[13px] font-semibold mb-2.5">포지션 영향</div>
+        <div className="flex gap-2 mb-2.5">
+          {pi.hasRiskReduction && (
+            <span className="text-[11px] px-2 py-0.5 rounded bg-[#3fb95022] text-[#3fb950]">리스크 감소</span>
+          )}
+          {pi.hasRiskIncrease && (
+            <span className="text-[11px] px-2 py-0.5 rounded bg-[#f8514922] text-[#f85149]">리스크 증가</span>
+          )}
+          {!pi.hasRiskReduction && !pi.hasRiskIncrease && (
+            <span className="text-[11px] px-2 py-0.5 rounded bg-[#30363d] text-[#8b949e]">영향 없음</span>
+          )}
+        </div>
+        <div className="text-[11px] space-y-1.5">
+          {pi.items.map((item, i) => {
+            const p = PURPOSE_LABELS[item.purpose] ?? { label: item.purpose, icon: '📋' };
+            const purposeTips: Record<string, string> = {
+              take_profit: '수익 실현을 위한 반대 방향 주문',
+              stop_loss: '손실 제한을 위한 반대 방향 주문',
+              hedging: '기존 포지션 리스크를 상쇄하는 주문',
+              position_expansion: '기존 포지션과 같은 방향 추가 진입',
+              new_entry: '포지션이 없는 상태에서의 신규 진입',
+            };
+            return (
+              <div key={i} className="flex items-start gap-1.5 py-1 border-b border-[#21262d] last:border-0">
+                <span>{p.icon}</span>
+                <div className="flex-1">
+                  <div className="text-[#c9d1d9]">{item.description}</div>
+                  <div className="text-[#484f58] text-[10px]">
+                    {item.orderSide === 'buy' ? '매수' : '매도'} ${item.orderPrice.toLocaleString()} × {item.orderSize}
+                  </div>
+                </div>
+                <span className="text-[10px] text-[#8b949e] shrink-0">
+                  <Tip text={purposeTips[item.purpose] ?? '주문 목적 분류'}>{p.label} ⓘ</Tip>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        {ai?.impactInterpretation && <InterpretationBox text={ai.impactInterpretation} />}
+      </Card>
+    </>
+  );
+}
+
+// ── Order Suggest Tab ──
+
+function OrderSuggestTab({ ruleEngine, ai }: { ruleEngine: OrderAnalysisRuleEngineResults | null; ai: OrderAnalysisAIInterpretation | null }) {
+  if (!ruleEngine) return <NoDataMessage />;
+
+  const s = ruleEngine.strategy;
+  const ep = ruleEngine.executionProbability;
+  const pi = ruleEngine.positionImpact;
+
+  const bullets: string[] = [];
+  bullets.push(`🎯 전략: ${STRATEGY_LABELS[s.detectedStrategy]} (${CONFIDENCE_LABELS[s.confidence].label})`);
+  bullets.push(`📊 주문: 매수 ${s.buyCount}개, 매도 ${s.sellCount}개`);
+  if (ep.lowCount > 0) bullets.push(`⚠ 체결 가능성 낮은 주문 ${ep.lowCount}개`);
+  if (pi.hasRiskReduction) bullets.push('✅ 리스크 감소 주문 포함');
+  if (pi.hasRiskIncrease) bullets.push('🔺 리스크 증가 주문 포함');
+
+  return (
+    <>
+      {ai?.overallSummary && (
+        <Card>
+          <SectionLabel>🤖 AI 종합 분석</SectionLabel>
+          <div className="text-[12px] leading-[1.8] text-[#c9d1d9] whitespace-pre-wrap">
+            {ai.overallSummary}
+          </div>
+        </Card>
+      )}
+      <Card>
+        <SectionLabel>📋 Rule Engine 요약</SectionLabel>
+        <div className="text-[11px] space-y-1">
+          {bullets.map((b, i) => (
+            <div key={i} className="text-[#8b949e]">{b}</div>
+          ))}
+        </div>
+      </Card>
+    </>
+  );
+}
+
+
+// ── Order Change Coming Soon ──
+
+function OrderChangeComingSoon() {
+  return (
+    <Card>
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <div className="text-2xl mb-2">🚧</div>
+        <div className="text-[13px] font-semibold text-[#c9d1d9] mb-1">전략 변경 탐지</div>
+        <div className="text-[11px] text-[#484f58] leading-[1.6]">
+          주문 수정/취소/재배치 이벤트 기반<br />전략 변경 탐지 기능을 준비 중입니다
+        </div>
+      </div>
+    </Card>
   );
 }

@@ -1,6 +1,6 @@
-import type { RuleEngineResults, AIInterpretation, FundingAnalysisResult, OIAnalysisResult, LiquidationClusterResult } from "../types/index.js";
+import type { RuleEngineResults, AIInterpretation, FundingAnalysisResult, OIAnalysisResult, LiquidationClusterResult, OrderAnalysisRuleEngineResults, OrderAnalysisAIInterpretation } from "../types/index.js";
 import { callLLM } from "./llm-client.js";
-import { buildPositionAnalysisPrompt, buildFundingPrompt, buildOIPrompt, buildLiquidationPrompt } from "./prompt-builder.js";
+import { buildPositionAnalysisPrompt, buildFundingPrompt, buildOIPrompt, buildLiquidationPrompt, buildOrderAnalysisPrompt } from "./prompt-builder.js";
 
 export async function interpretPositionAnalysis(
   results: RuleEngineResults,
@@ -55,6 +55,21 @@ export async function interpretLiquidation(
   try {
     return JSON.parse(raw) as { liquidationInterpretation: string };
   } catch {
+    return null;
+  }
+}
+
+export async function interpretOrderAnalysis(
+  results: OrderAnalysisRuleEngineResults,
+  symbol: string,
+): Promise<OrderAnalysisAIInterpretation | null> {
+  const { system, user } = buildOrderAnalysisPrompt(results, symbol);
+  const raw = await callLLM(system, user);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as OrderAnalysisAIInterpretation;
+  } catch {
+    console.error("Failed to parse order analysis AI response:", raw);
     return null;
   }
 }

@@ -1,4 +1,4 @@
-import type { RuleEngineResults, FundingAnalysisResult, OIAnalysisResult, LiquidationClusterResult } from "../types/index.js";
+import type { RuleEngineResults, FundingAnalysisResult, OIAnalysisResult, LiquidationClusterResult, OrderAnalysisRuleEngineResults } from "../types/index.js";
 
 const SYSTEM_PROMPT = `당신은 암호화폐 무기한 선물 거래 전문 분석가입니다.
 Rule Engine이 산출한 수치 데이터를 기반으로 한국어로 간결하고 실용적인 분석 코멘트를 작성합니다.
@@ -77,5 +77,38 @@ export function buildLiquidationPrompt(result: LiquidationClusterResult, symbol:
 ${result.nearbyWarning ? `⚠️ 근접 경고 (${result.nearbyClusterSide})` : "근접 클러스터 없음"}
 
 JSON 형식으로 응답: { "liquidationInterpretation": "해석" }`;
+  return { system: SYSTEM_PROMPT, user };
+}
+
+export function buildOrderAnalysisPrompt(results: OrderAnalysisRuleEngineResults, symbol: string): { system: string; user: string } {
+  const s = results.strategy;
+  const ep = results.executionProbability;
+  const oc = results.orderClusters;
+  const pi = results.positionImpact;
+
+  const user = `${symbol} 오픈 오더 종합 분석 데이터:
+
+[전략 탐지] 전략: ${s.detectedStrategy} (신뢰도: ${s.confidence})
+- 설명: ${s.description}
+- 주문 수: ${s.orderCount}개 (매수 ${s.buyCount}, 매도 ${s.sellCount})
+- 가격 범위: $${s.priceRange.min.toLocaleString()} ~ $${s.priceRange.max.toLocaleString()}
+
+[체결 가능성] High: ${ep.highCount}개, Medium: ${ep.mediumCount}개, Low: ${ep.lowCount}개
+
+[주문 집중도] 클러스터: ${oc.clusters.length}개, 우세: ${oc.dominantSide}
+${oc.clusters.map((c) => `- $${c.priceLevel.toLocaleString()} (${c.clusterType}, ${c.orderCount}개, ${c.distancePercent.toFixed(1)}%)`).join("\n")}
+
+[포지션 영향] 리스크 감소: ${pi.hasRiskReduction ? "있음" : "없음"}, 리스크 증가: ${pi.hasRiskIncrease ? "있음" : "없음"}
+${pi.items.map((i) => `- ${i.description} (${i.purpose})`).join("\n")}
+
+위 데이터를 기반으로 다음 JSON 형식으로 응답해주세요:
+{
+  "strategyInterpretation": "전략 해석",
+  "executionInterpretation": "체결 가능성 해석",
+  "clusterInterpretation": "주문 집중도 해석",
+  "impactInterpretation": "포지션 영향 해석",
+  "overallSummary": "종합 요약 및 제안"
+}`;
+
   return { system: SYSTEM_PROMPT, user };
 }

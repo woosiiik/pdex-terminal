@@ -86,3 +86,11 @@ export async function getMarketMeta(): Promise<MarketMeta> {
   const data = await postInfo({ type: "meta" }) as MarketMeta;
   return data;
 }
+
+export async function getL2Book(symbol: string, nSigFigs: number = 5): Promise<{ bids: Array<{ px: string; sz: string }>; asks: Array<{ px: string; sz: string }> }> {
+  const data = await postInfo({ type: "l2Book", coin: symbol, nSigFigs }) as { levels: Array<Array<{ px: string; sz: string; n: number }>> };
+  return {
+    bids: (data.levels[0] ?? []).map((l) => ({ px: l.px, sz: l.sz })),
+    asks: (data.levels[1] ?? []).map((l) => ({ px: l.px, sz: l.sz })),
+  };
+}

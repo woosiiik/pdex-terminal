@@ -105,6 +105,97 @@ export interface LiquidationClusterResult {
 }
 
 // ============================================================
+// Order Analysis Result Types
+// ============================================================
+
+export interface OpenOrder {
+  coin: string;
+  side: "buy" | "sell";
+  type: "limit" | "market";
+  price: number;
+  size: number;
+  timestamp: number;
+}
+
+export type StrategyType = "grid" | "range" | "breakout" | "accumulation" | "unknown";
+
+export interface StrategyDetectionResult {
+  detectedStrategy: StrategyType;
+  confidence: "high" | "medium" | "low";
+  description: string;
+  orderCount: number;
+  priceRange: { min: number; max: number };
+  buyCount: number;
+  sellCount: number;
+}
+
+export type ExecutionProbability = "high" | "medium" | "low";
+
+export interface ExecutionProbabilityItem {
+  coin: string;
+  side: "buy" | "sell";
+  price: number;
+  size: number;
+  distancePercent: number;
+  probability: ExecutionProbability;
+}
+
+export interface ExecutionProbabilityResult {
+  items: ExecutionProbabilityItem[];
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+}
+
+export type ClusterType = "sell_wall" | "accumulation_zone" | "distribution_zone";
+
+export interface OrderCluster {
+  priceLevel: number;
+  totalSize: number;
+  orderCount: number;
+  side: "buy" | "sell";
+  clusterType: ClusterType;
+  distancePercent: number;
+}
+
+export interface OrderClusterResult {
+  clusters: OrderCluster[];
+  dominantSide: "buy" | "sell" | "balanced";
+}
+
+export type OrderPurpose = "take_profit" | "stop_loss" | "hedging" | "position_expansion" | "new_entry";
+
+export interface PositionImpactItem {
+  coin: string;
+  orderSide: "buy" | "sell";
+  orderPrice: number;
+  orderSize: number;
+  purpose: OrderPurpose;
+  description: string;
+}
+
+export interface PositionImpactResult {
+  items: PositionImpactItem[];
+  hasRiskReduction: boolean;
+  hasRiskIncrease: boolean;
+}
+
+export interface OrderAnalysisRuleEngineResults {
+  strategy: StrategyDetectionResult;
+  executionProbability: ExecutionProbabilityResult;
+  orderClusters: OrderClusterResult;
+  positionImpact: PositionImpactResult;
+}
+
+export interface OrderAnalysisAIInterpretation {
+  strategyInterpretation: string;
+  executionInterpretation: string;
+  clusterInterpretation: string;
+  impactInterpretation: string;
+  overallSummary: string;
+}
+
+// ============================================================
 // AI Engine Types
 // ============================================================
 
@@ -202,4 +293,36 @@ export interface ErrorResponse {
     message: string;
     details?: unknown;
   };
+}
+
+export interface OrderAnalysisResponse {
+  success: boolean;
+  timestamp: string;
+  symbol: string;
+  ruleEngine: OrderAnalysisRuleEngineResults;
+  aiInterpretation: OrderAnalysisAIInterpretation | null;
+}
+
+// ============================================================
+// L2 Orderbook
+// ============================================================
+
+export interface L2BookLevel {
+  price: number;
+  size: number;
+}
+
+export interface L2Book {
+  bids: L2BookLevel[];
+  asks: L2BookLevel[];
+}
+
+// ============================================================
+// Order Analysis Market Context
+// ============================================================
+
+export interface OrderMarketContext {
+  volatility24h: number;
+  fundingRate: number;
+  l2Book: L2Book | null;
 }

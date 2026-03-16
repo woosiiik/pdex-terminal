@@ -5,6 +5,15 @@ import type { Request, Response, NextFunction } from "express";
 // Zod Schemas
 // ============================================================
 
+const openOrderSchema = z.object({
+  coin: z.string().min(1),
+  side: z.enum(["buy", "sell"]),
+  type: z.enum(["limit", "market"]),
+  price: z.number().positive(),
+  size: z.number().positive(),
+  timestamp: z.number(),
+});
+
 const openPositionSchema = z.object({
   coin: z.string().min(1),
   side: z.enum(["long", "short"]),
@@ -23,6 +32,12 @@ export const positionAnalysisRequestSchema = z.object({
 });
 
 export const symbolRequestSchema = z.object({
+  symbol: z.string().min(1, "심볼은 필수 항목입니다"),
+});
+
+export const orderAnalysisRequestSchema = z.object({
+  orders: z.array(openOrderSchema).min(1, "최소 1개의 주문이 필요합니다"),
+  positions: z.array(openPositionSchema).default([]),
   symbol: z.string().min(1, "심볼은 필수 항목입니다"),
 });
 

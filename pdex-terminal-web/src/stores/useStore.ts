@@ -10,6 +10,7 @@ import type {
   FundingAnalysisResponse,
   OIAnalysisResponse,
   LiquidationAnalysisResponse,
+  OrderAnalysisResponse,
   Alert,
   ActiveAssetCtx,
 } from '@/lib/types';
@@ -42,6 +43,7 @@ interface AppState {
   fundingAnalysis: FundingAnalysisResponse | null;
   oiAnalysis: OIAnalysisResponse | null;
   liquidationAnalysis: LiquidationAnalysisResponse | null;
+  orderAnalysis: OrderAnalysisResponse | null;
   analysisLoading: boolean;
 
   // Alerts
@@ -66,6 +68,7 @@ interface AppState {
   setFundingAnalysis: (analysis: FundingAnalysisResponse | null) => void;
   setOiAnalysis: (analysis: OIAnalysisResponse | null) => void;
   setLiquidationAnalysis: (analysis: LiquidationAnalysisResponse | null) => void;
+  setOrderAnalysis: (analysis: OrderAnalysisResponse | null) => void;
   setAnalysisLoading: (loading: boolean) => void;
   addAlert: (alert: Omit<Alert, 'id'>) => void;
   clearAlerts: () => void;
@@ -91,6 +94,7 @@ const initialState = {
   fundingAnalysis: null as FundingAnalysisResponse | null,
   oiAnalysis: null as OIAnalysisResponse | null,
   liquidationAnalysis: null as LiquidationAnalysisResponse | null,
+  orderAnalysis: null as OrderAnalysisResponse | null,
   analysisLoading: false,
   alerts: [] as Alert[],
 };
@@ -116,6 +120,7 @@ export const useStore = create<AppState>((set) => ({
   setFundingAnalysis: (analysis) => set({ fundingAnalysis: analysis }),
   setOiAnalysis: (analysis) => set({ oiAnalysis: analysis }),
   setLiquidationAnalysis: (analysis) => set({ liquidationAnalysis: analysis }),
+  setOrderAnalysis: (analysis) => set({ orderAnalysis: analysis }),
   setAnalysisLoading: (loading) => set({ analysisLoading: loading }),
   addAlert: (alert) =>
     set((state) => ({

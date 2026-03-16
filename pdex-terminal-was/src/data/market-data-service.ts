@@ -89,3 +89,17 @@ export async function getMarketMeta(): Promise<CachedResult<MarketMeta>> {
     () => hl.getMarketMeta(),
   );
 }
+
+export async function getL2Book(symbol: string): Promise<CachedResult<import("../types/index.js").L2Book>> {
+  return fetchWithCache(
+    cacheKey("l2book", symbol),
+    config.cacheTTL.price, // short TTL like price
+    async () => {
+      const raw = await hl.getL2Book(symbol);
+      return {
+        bids: raw.bids.map((l) => ({ price: parseFloat(l.px), size: parseFloat(l.sz) })),
+        asks: raw.asks.map((l) => ({ price: parseFloat(l.px), size: parseFloat(l.sz) })),
+      };
+    },
+  );
+}

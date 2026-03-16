@@ -1,13 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useStore } from "@/stores/useStore";
 
 type BottomTab = "alerts" | "journal";
 
+const MIN_HEIGHT = 60;
+const MAX_HEIGHT = 400;
+const DEFAULT_HEIGHT = 120;
+
 export default function BottomBar() {
   const [activeTab, setActiveTab] = useState<BottomTab>("alerts");
+  const [height, setHeight] = useState(DEFAULT_HEIGHT);
+  const dragging = useRef(false);
+  const startY = useRef(0);
+  const startH = useRef(0);
   const alerts = useStore((s) => s.alerts);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+    startY.current = e.clientY;
+    startH.current = height;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!dragging.current) return;
+      const delta = startY.current - ev.clientY;
+      const next = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, startH.current + delta));
+      setHeight(next);
+    };
+
+    const onMouseUp = () => {
+      dragging.current = false;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, [height]);
 
   const typeIcon: Record<string, { icon: string; color: string }> = {
     warning: { icon: "⚠", color: "text-yellow-500" },
@@ -16,14 +47,20 @@ export default function BottomBar() {
   };
 
   return (
-    <div className="flex flex-col h-[120px] shrink-0 border-t border-[#30363d] bg-[#161b22]">
+    <div className="flex flex-col shrink-0 border-t border-[#30363d] bg-[#161b22]" style={{ height }}>
+      {/* Drag Handle */}
+      <div
+        className="h-1 cursor-row-resize hover:bg-[#58a6ff44] transition-colors shrink-0"
+        onMouseDown={onMouseDown}
+      />
+
       {/* Tab Header */}
       <div className="flex border-b border-[#30363d]">
         {(["alerts", "journal"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-xs cursor-pointer border-b-2 transition-colors ${
+            className={`px-4 py-1.5 text-xs cursor-pointer border-b-2 transition-colors ${
               activeTab === tab
                 ? "text-[#58a6ff] border-[#58a6ff]"
                 : "text-[#8b949e] border-transparent hover:text-[#c9d1d9]"
