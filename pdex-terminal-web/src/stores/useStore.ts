@@ -11,6 +11,7 @@ import type {
   OIAnalysisResponse,
   LiquidationAnalysisResponse,
   Alert,
+  ActiveAssetCtx,
 } from '@/lib/types';
 
 interface AppState {
@@ -31,6 +32,7 @@ interface AppState {
   candles: CandleData[];
   timeframe: Timeframe;
   allMids: Record<string, string>;
+  activeAssetCtx: ActiveAssetCtx | null;
 
   // Selection mode (position or order click in PortfolioPanel)
   selectedMode: 'position' | 'order' | null;
@@ -59,6 +61,7 @@ interface AppState {
   setCandles: (candles: CandleData[]) => void;
   setTimeframe: (timeframe: Timeframe) => void;
   setAllMids: (mids: Record<string, string>) => void;
+  setActiveAssetCtx: (ctx: ActiveAssetCtx | null) => void;
   setPositionAnalysis: (analysis: PositionAnalysisResponse | null) => void;
   setFundingAnalysis: (analysis: FundingAnalysisResponse | null) => void;
   setOiAnalysis: (analysis: OIAnalysisResponse | null) => void;
@@ -83,6 +86,7 @@ const initialState = {
   candles: [] as CandleData[],
   timeframe: '15m' as Timeframe,
   allMids: {} as Record<string, string>,
+  activeAssetCtx: null as ActiveAssetCtx | null,
   positionAnalysis: null as PositionAnalysisResponse | null,
   fundingAnalysis: null as FundingAnalysisResponse | null,
   oiAnalysis: null as OIAnalysisResponse | null,
@@ -107,6 +111,7 @@ export const useStore = create<AppState>((set) => ({
   setCandles: (candles) => set({ candles }),
   setTimeframe: (timeframe) => set({ timeframe }),
   setAllMids: (mids) => set({ allMids: mids }),
+  setActiveAssetCtx: (ctx) => set({ activeAssetCtx: ctx }),
   setPositionAnalysis: (analysis) => set({ positionAnalysis: analysis }),
   setFundingAnalysis: (analysis) => set({ fundingAnalysis: analysis }),
   setOiAnalysis: (analysis) => set({ oiAnalysis: analysis }),

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useStore } from '@/stores/useStore';
 import type { Timeframe, OrderbookLevel } from '@/lib/types';
 import {
@@ -68,7 +68,18 @@ export default function MarketPanel() {
 
 function MarketHeader({ coin }: { coin: string }) {
   const allMids = useStore((s) => s.allMids);
-  const markPrice = allMids[coin] ? parseFloat(allMids[coin]) : null;
+  const ctx = useStore((s) => s.activeAssetCtx);
+  const markPrice = ctx?.markPx ?? (allMids[coin] ? parseFloat(allMids[coin]) : null);
+  const oraclePrice = ctx?.oraclePx ?? null;
+
+  // 24h change
+  let change24h: string = '--';
+  let change24hClass = 'text-[#c9d1d9]';
+  if (ctx && ctx.prevDayPx > 0 && markPrice !== null) {
+    const pct = ((markPrice - ctx.prevDayPx) / ctx.prevDayPx) * 100;
+    change24h = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+    change24hClass = pct >= 0 ? 'text-[#3fb950]' : 'text-[#f85149]';
+  }
 
   return (
     <div className="flex items-center gap-5 px-4 py-2.5 bg-[#161b22] border-b border-[#30363d] shrink-0 overflow-x-auto">
@@ -82,29 +93,35 @@ function MarketHeader({ coin }: { coin: string }) {
         </span>
       </div>
 
-      {/* Mark Price */}
       <HeaderStat
         label="Mark"
         value={markPrice !== null ? formatNumber(markPrice) : '--'}
       />
 
-      {/* Oracle Price (placeholder — same as mark for now) */}
       <HeaderStat
         label="Oracle"
-        value={markPrice !== null ? formatNumber(markPrice) : '--'}
+        value={oraclePrice !== null ? formatNumber(oraclePrice) : '--'}
       />
 
-      {/* 24h Change placeholder */}
-      <HeaderStat label="24h" value="--" />
+      <HeaderStat label="24h" value={change24h} valueClass={change24hClass} />
 
-      {/* 24h Volume placeholder */}
-      <HeaderStat label="Volume" value="--" />
+      <HeaderStat
+        label="Volume"
+        value={ctx ? `$${formatCompact(ctx.dayNtlVlm)}` : '--'}
+      />
 
-      {/* Open Interest placeholder */}
-      <HeaderStat label="OI" value="--" />
+      <HeaderStat
+        label="Open Interest"
+        value={ctx && markPrice ? `$${formatCompact(ctx.openInterest * markPrice)}` : '--'}
+      />
 
-      {/* Funding Rate placeholder */}
-      <HeaderStat label="Funding" value="--" />
+      <HeaderStat
+        label="Funding"
+        value={ctx ? `${(ctx.funding * 100).toFixed(4)}%` : '--'}
+        valueClass={ctx ? (ctx.funding >= 0 ? 'text-[#3fb950]' : 'text-[#f85149]') : undefined}
+      />
+
+      <FundingCountdown />
     </div>
   );
 }
@@ -114,6 +131,33 @@ function HeaderStat({ label, value, valueClass }: { label: string; value: string
     <div className="flex flex-col shrink-0">
       <span className="text-[10px] text-[#484f58] leading-none mb-0.5">{label}</span>
       <span className={`text-[12px] font-medium ${valueClass ?? 'text-[#c9d1d9]'}`}>{value}</span>
+    </div>
+  );
+}
+
+function FundingCountdown() {
+  const [countdown, setCountdown] = useState('--:--');
+
+  useEffect(() => {
+    function update() {
+      const now = new Date();
+      const nextHour = new Date(now);
+      nextHour.setMinutes(0, 0, 0);
+      nextHour.setHours(nextHour.getHours() + 1);
+      const diff = nextHour.getTime() - now.getTime();
+      const mins = Math.floor(diff / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      setCountdown(`${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
+    }
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex flex-col shrink-0">
+      <span className="text-[10px] text-[#484f58] leading-none mb-0.5">Countdown</span>
+      <span className="text-[12px] font-medium text-[#d29922] font-mono">{countdown}</span>
     </div>
   );
 }

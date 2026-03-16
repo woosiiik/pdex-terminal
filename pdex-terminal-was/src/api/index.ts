@@ -21,8 +21,8 @@ router.post(
   validate(positionAnalysisRequestSchema),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { positions, symbol } = req.body;
-      const result = await analyzePosition(positions, symbol);
+      const { positions, symbol, userAddress, exchange } = req.body;
+      const result = await analyzePosition(positions, symbol, { userAddress, exchange });
       res.json(result);
     } catch (err) {
       handleError(res, err);

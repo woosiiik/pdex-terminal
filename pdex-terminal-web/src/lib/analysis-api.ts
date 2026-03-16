@@ -84,6 +84,8 @@ export function analyzePosition(
   return post<PositionAnalysisResponse>('/api/v1/analysis/position', {
     positions: request.positions,
     symbol: request.symbol,
+    userAddress: request.userAddress,
+    exchange: request.exchange,
   });
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { useStore } from '@/stores/useStore';
 
 const EXCHANGES = [
@@ -84,8 +85,9 @@ export default function TopBar() {
   return (
     <header className="flex items-center justify-between bg-[#161b22] border-b border-[#30363d] px-5 h-14 shrink-0">
       {/* Logo */}
-      <div className="text-base font-bold text-[#58a6ff] select-none whitespace-nowrap">
-        ⚡ PDEX Terminal
+      <div className="flex items-center gap-2 select-none whitespace-nowrap">
+        <Image src="/icon.svg" alt="Calico" width={28} height={28} className="rounded-md" />
+        <span className="text-base font-bold text-[#58a6ff]">Calico Terminal</span>
       </div>
 
       {/* Center: Exchange selector + Wallet input */}

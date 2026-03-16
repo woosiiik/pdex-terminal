@@ -18,6 +18,8 @@ const openPositionSchema = z.object({
 export const positionAnalysisRequestSchema = z.object({
   positions: z.array(openPositionSchema).min(1, "최소 1개의 포지션이 필요합니다"),
   symbol: z.string().min(1, "심볼은 필수 항목입니다"),
+  userAddress: z.string().optional(),
+  exchange: z.string().optional(),
 });
 
 export const symbolRequestSchema = z.object({

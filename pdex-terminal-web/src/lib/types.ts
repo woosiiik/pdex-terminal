@@ -182,6 +182,19 @@ export interface ErrorResponse {
 }
 
 // ============================================================
+// Active Asset Context (from WS activeAssetCtx)
+// ============================================================
+
+export interface ActiveAssetCtx {
+  dayNtlVlm: number;       // 24h volume
+  funding: number;          // current funding rate
+  openInterest: number;     // open interest
+  oraclePx: number;         // oracle price
+  prevDayPx: number;        // previous day price (for 24h change)
+  markPx: number;           // mark price
+}
+
+// ============================================================
 // Chart Types
 // ============================================================
 
@@ -215,6 +228,8 @@ export interface OpenPosition {
 export interface PositionAnalysisRequest {
   positions: OpenPosition[];
   symbol: string;
+  userAddress?: string;
+  exchange?: string;
 }
 
 // ============================================================

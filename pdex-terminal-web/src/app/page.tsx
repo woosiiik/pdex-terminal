@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import TopBar from '@/components/TopBar';
 import PortfolioPanel from '@/components/PortfolioPanel';
 import MarketPanel from '@/components/MarketPanel';
@@ -41,12 +42,14 @@ function EmptyState() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-8">
       {/* Hero Icon */}
-      <div className="text-[64px] opacity-30 select-none">⚡</div>
+      <div className="select-none">
+        <Image src="/icon.svg" alt="Calico Terminal" width={96} height={96} className="rounded-2xl opacity-90" />
+      </div>
 
       {/* Title */}
       <div className="text-center">
         <h1 className="text-2xl font-bold text-[#c9d1d9] mb-2">
-          PDEX Terminal에 오신 것을 환영합니다
+          Calico Terminal에 오신 것을 환영합니다
         </h1>
         <p className="text-sm text-[#8b949e] leading-relaxed">
           Hyperliquid 포지션을 실시간으로 모니터링하고
@@ -224,7 +227,7 @@ function ConnectedLayout() {
       marginUsed: p.marginUsed,
     }));
 
-    analyzePosition({ positions: openPositions, symbol: selectedCoin })
+    analyzePosition({ positions: openPositions, symbol: selectedCoin, userAddress: walletAddress ?? undefined })
       .then((res) => {
         setPositionAnalysis(res);
       })

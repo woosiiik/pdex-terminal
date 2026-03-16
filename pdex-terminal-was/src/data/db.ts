@@ -33,9 +33,36 @@ export async function runMigrations(): Promise<void> {
         analysis_type VARCHAR(50) NOT NULL,
         rule_engine_result JSON NOT NULL,
         ai_interpretation TEXT,
+        user_address VARCHAR(42) DEFAULT NULL,
+        exchange VARCHAR(20) DEFAULT 'hyperliquid',
+        side VARCHAR(10) DEFAULT NULL,
+        leverage INT DEFAULT NULL,
+        entry_price DECIMAL(30,8) DEFAULT NULL,
+        mark_price DECIMAL(30,8) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Add columns if table already exists (compatible with MySQL < 8.0.37)
+    const newCols = [
+      { name: 'user_address', def: 'VARCHAR(42) DEFAULT NULL' },
+      { name: 'exchange', def: "VARCHAR(20) DEFAULT 'hyperliquid'" },
+      { name: 'side', def: 'VARCHAR(10) DEFAULT NULL' },
+      { name: 'leverage', def: 'INT DEFAULT NULL' },
+      { name: 'entry_price', def: 'DECIMAL(30,8) DEFAULT NULL' },
+      { name: 'mark_price', def: 'DECIMAL(30,8) DEFAULT NULL' },
+    ];
+    for (const col of newCols) {
+      const [rows] = await conn.query(
+        `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'analysis_history' AND COLUMN_NAME = ?`,
+        [config.mysql.database, col.name],
+      );
+      const exists = (rows as Array<{ cnt: number }>)[0]?.cnt > 0;
+      if (!exists) {
+        await conn.query(`ALTER TABLE analysis_history ADD COLUMN ${col.name} ${col.def}`).catch(() => {});
+      }
+    }
     await conn.query(`
       CREATE INDEX IF NOT EXISTS idx_analysis_symbol_time
       ON analysis_history(symbol, created_at DESC)
@@ -78,17 +105,39 @@ export async function runMigrations(): Promise<void> {
 // Repository Functions
 // ============================================================
 
+export interface AnalysisExtra {
+  userAddress?: string;
+  exchange?: string;
+  side?: string;
+  leverage?: number;
+  entryPrice?: number;
+  markPrice?: number;
+}
+
 export async function saveAnalysisResult(
   symbol: string,
   analysisType: string,
   ruleEngineResult: unknown,
   aiInterpretation: string | null,
+  extra?: AnalysisExtra,
 ): Promise<void> {
   try {
     await getPool().execute(
-      `INSERT INTO analysis_history (symbol, analysis_type, rule_engine_result, ai_interpretation)
-       VALUES (?, ?, ?, ?)`,
-      [symbol, analysisType, JSON.stringify(ruleEngineResult), aiInterpretation],
+      `INSERT INTO analysis_history
+       (symbol, analysis_type, rule_engine_result, ai_interpretation, user_address, exchange, side, leverage, entry_price, mark_price)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        symbol,
+        analysisType,
+        JSON.stringify(ruleEngineResult),
+        aiInterpretation,
+        extra?.userAddress ?? null,
+        extra?.exchange ?? "hyperliquid",
+        extra?.side ?? null,
+        extra?.leverage ?? null,
+        extra?.entryPrice ?? null,
+        extra?.markPrice ?? null,
+      ],
     );
   } catch (err) {
     console.error("Failed to save analysis result:", err);
@@ -123,7 +172,7 @@ export async function getFundingRateHistory(coin: string, days: number): Promise
       `SELECT rate, recorded_at FROM funding_rate_history
        WHERE coin = ? AND recorded_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
        ORDER BY recorded_at ASC`,
-      [coin, days],
+      [coin, String(days)],
     );
     return (rows as Array<{ rate: string; recorded_at: Date }>).map((r) => ({
       rate: parseFloat(r.rate),
@@ -140,7 +189,7 @@ export async function getOIHistory(coin: string, limit: number = 2): Promise<Arr
     const [rows] = await getPool().execute(
       `SELECT open_interest, price, recorded_at FROM oi_history
        WHERE coin = ? ORDER BY recorded_at DESC LIMIT ?`,
-      [coin, limit],
+      [coin, String(limit)],
     );
     return (rows as Array<{ open_interest: string; price: string; recorded_at: Date }>).map((r) => ({
       open_interest: parseFloat(r.open_interest),

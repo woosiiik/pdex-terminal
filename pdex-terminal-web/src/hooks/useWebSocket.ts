@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { HyperliquidWS } from '@/lib/hyperliquid-ws';
 import { useStore } from '@/stores/useStore';
-import type { Position, Order, CandleData, OrderbookLevel } from '@/lib/types';
+import type { Position, Order, CandleData, OrderbookLevel, ActiveAssetCtx } from '@/lib/types';
 
 // ── Helpers to parse Hyperliquid WS payloads ─────────────
 
@@ -119,6 +119,7 @@ export function useWebSocket(walletAddress: string | null): void {
   const setOrderbook = useStore((s) => s.setOrderbook);
   const setCandles = useStore((s) => s.setCandles);
   const setAccountSummary = useStore((s) => s.setAccountSummary);
+  const setActiveAssetCtx = useStore((s) => s.setActiveAssetCtx);
 
   // Connect / disconnect based on walletAddress
   useEffect(() => {
@@ -242,6 +243,19 @@ export function useWebSocket(walletAddress: string | null): void {
           setCandles([...current, candle]);
         }
       }
+
+      if (msg.channel === 'activeAssetCtx' && msg.data) {
+        const d = msg.data as { ctx: { dayNtlVlm: string; funding: string; openInterest: string; oraclePx: string; prevDayPx: string; markPx: string } };
+        const ctx = d.ctx;
+        setActiveAssetCtx({
+          dayNtlVlm: parseFloat(ctx.dayNtlVlm),
+          funding: parseFloat(ctx.funding),
+          openInterest: parseFloat(ctx.openInterest),
+          oraclePx: parseFloat(ctx.oraclePx),
+          prevDayPx: parseFloat(ctx.prevDayPx),
+          markPx: parseFloat(ctx.markPx),
+        });
+      }
     });
 
     ws.connect();
@@ -253,7 +267,7 @@ export function useWebSocket(walletAddress: string | null): void {
       ws.disconnect();
       wsRef.current = null;
     };
-  }, [walletAddress, setPositions, setOrders, setAllMids, setOrderbook, setCandles, setAccountSummary]);
+  }, [walletAddress, setPositions, setOrders, setAllMids, setOrderbook, setCandles, setAccountSummary, setActiveAssetCtx]);
 
   // Subscribe to coin-specific channels when selectedCoin changes
   useEffect(() => {
@@ -262,10 +276,12 @@ export function useWebSocket(walletAddress: string | null): void {
 
     ws.subscribe('l2Book', { coin: selectedCoin });
     ws.subscribe('candle', { coin: selectedCoin, interval: '1h' });
+    ws.subscribe('activeAssetCtx', { coin: selectedCoin });
 
     return () => {
       ws.unsubscribe('l2Book', { coin: selectedCoin });
       ws.unsubscribe('candle', { coin: selectedCoin, interval: '1h' });
+      ws.unsubscribe('activeAssetCtx', { coin: selectedCoin });
     };
   }, [selectedCoin]);
 }

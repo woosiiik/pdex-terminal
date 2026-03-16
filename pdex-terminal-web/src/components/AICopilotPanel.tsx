@@ -10,20 +10,20 @@ import type {
 type PositionTabId = 'risk' | 'funding' | 'oi' | 'liq' | 'suggest';
 type OrderTabId = 'order-strategy' | 'order-execution' | 'order-concentration' | 'order-impact' | 'order-suggest';
 
-const POSITION_TABS: { id: PositionTabId; label: string }[] = [
-  { id: 'risk', label: '리스크' },
-  { id: 'funding', label: '펀딩' },
-  { id: 'oi', label: 'OI' },
-  { id: 'liq', label: '청산' },
-  { id: 'suggest', label: '제안' },
+const POSITION_TABS: { id: PositionTabId; label: string; tooltip: string }[] = [
+  { id: 'risk', label: '리스크', tooltip: '레버리지, 청산거리, 변동성, 펀딩, 집중도를 종합한 위험도 점수 (0~10)' },
+  { id: 'funding', label: '펀딩', tooltip: '현재 펀딩 레이트와 추세, Z-Score 기반 평균 회귀 가능성 분석' },
+  { id: 'oi', label: 'OI', tooltip: 'Open Interest 변화와 가격 변화를 조합한 시장 포지션 시나리오 분석' },
+  { id: 'liq', label: '청산', tooltip: '현재가 근처의 롱/숏 청산 클러스터 분포 및 근접 경고' },
+  { id: 'suggest', label: '제안', tooltip: 'Rule Engine + AI 종합 분석 결과 요약 및 제안' },
 ];
 
-const ORDER_TABS: { id: OrderTabId; label: string }[] = [
-  { id: 'order-strategy', label: '전략' },
-  { id: 'order-execution', label: '체결' },
-  { id: 'order-concentration', label: '집중도' },
-  { id: 'order-impact', label: '영향' },
-  { id: 'order-suggest', label: '제안' },
+const ORDER_TABS: { id: OrderTabId; label: string; tooltip: string }[] = [
+  { id: 'order-strategy', label: '전략', tooltip: '오더 전략 분석 (준비 중)' },
+  { id: 'order-execution', label: '체결', tooltip: '체결 가능성 분석 (준비 중)' },
+  { id: 'order-concentration', label: '집중도', tooltip: '오더 집중도 분석 (준비 중)' },
+  { id: 'order-impact', label: '영향', tooltip: '시장 영향 분석 (준비 중)' },
+  { id: 'order-suggest', label: '제안', tooltip: '오더 제안 (준비 중)' },
 ];
 
 export default function AICopilotPanel() {
@@ -107,7 +107,7 @@ function ComingSoon({ coin }: { coin: string }) {
 
 // ── Tab Header ──
 
-function TabHeader<T extends string>({ tabs, activeTab, onTabChange }: { tabs: { id: T; label: string }[]; activeTab: T; onTabChange: (t: T) => void }) {
+function TabHeader<T extends string>({ tabs, activeTab, onTabChange }: { tabs: { id: T; label: string; tooltip?: string }[]; activeTab: T; onTabChange: (t: T) => void }) {
   return (
     <div className="flex bg-[#161b22] border-b border-[#30363d] shrink-0">
       {tabs.map((tab) => (
@@ -115,6 +115,7 @@ function TabHeader<T extends string>({ tabs, activeTab, onTabChange }: { tabs: {
           key={tab.id}
           type="button"
           onClick={() => onTabChange(tab.id)}
+          title={tab.tooltip}
           className={`px-4 py-2.5 text-xs cursor-pointer border-b-2 transition-colors ${
             activeTab === tab.id
               ? 'text-[#58a6ff] border-[#58a6ff]'
@@ -148,6 +149,19 @@ function LoadingSkeleton() {
 }
 
 // ── Shared Helpers ──
+
+// ── Inline Tooltip ──
+
+function Tip({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <span className="relative group/tip cursor-help">
+      {children}
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 rounded-md bg-[#1c2128] border border-[#30363d] text-[10px] leading-[1.5] text-[#c9d1d9] whitespace-pre-wrap w-[180px] text-center opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 shadow-lg">
+        {text}
+      </span>
+    </span>
+  );
+}
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
@@ -219,11 +233,11 @@ function RiskTab({ ruleEngine, ai }: { ruleEngine: RuleEngineResults | null; ai:
 
         {/* Individual risk factors */}
         <div className="text-[11px] space-y-0">
-          <RiskFactorRow label="Leverage Risk" score={risk.leverageRisk} />
-          <RiskFactorRow label="Liquidation Risk" score={risk.liquidationRisk} />
-          <RiskFactorRow label="Volatility Risk" score={risk.volatilityRisk} />
-          <RiskFactorRow label="Funding Crowd Risk" score={risk.fundingCrowdRisk} />
-          <RiskFactorRow label="Concentration Risk" score={risk.concentrationRisk} last />
+          <RiskFactorRow label="Leverage Risk" score={risk.leverageRisk} tip="레버리지 배수 기반 위험도. 10x 이상이면 높음" />
+          <RiskFactorRow label="Liquidation Risk" score={risk.liquidationRisk} tip="현재가 대비 청산가 거리. 가까울수록 위험" />
+          <RiskFactorRow label="Volatility Risk" score={risk.volatilityRisk} tip="24시간 변동성(ATR) 기반 위험도" />
+          <RiskFactorRow label="Funding Crowd Risk" score={risk.fundingCrowdRisk} tip="펀딩 레이트가 극단적일 때 군중 반대 포지션 위험" />
+          <RiskFactorRow label="Concentration Risk" score={risk.concentrationRisk} tip="단일 포지션 마진 비중이 높을수록 위험" last />
         </div>
 
         {ai?.riskInterpretation && <InterpretationBox text={ai.riskInterpretation} />}
@@ -233,11 +247,11 @@ function RiskTab({ ruleEngine, ai }: { ruleEngine: RuleEngineResults | null; ai:
       <Card>
         <SectionLabel>📍 Support / Resistance</SectionLabel>
         <div className="text-[11px] leading-[1.7] text-[#8b949e]">
-          <SRRow label="Short-Term High" value={sr.shortTermHigh} color="text-[#f85149]" />
-          <SRRow label="Short-Term Low" value={sr.shortTermLow} color="text-[#3fb950]" />
-          <SRRow label="VWAP" value={sr.vwap} color="text-[#c9d1d9]" />
-          <SRRow label="Pivot R1" value={sr.pivotR1} color="text-[#f85149]" />
-          <SRRow label="Pivot S1" value={sr.pivotS1} color="text-[#3fb950]" />
+          <SRRow label="Short-Term High" value={sr.shortTermHigh} color="text-[#f85149]" tip="7일 1시간봉 기준 단기 저항선" />
+          <SRRow label="Short-Term Low" value={sr.shortTermLow} color="text-[#3fb950]" tip="7일 1시간봉 기준 단기 지지선" />
+          <SRRow label="VWAP" value={sr.vwap} color="text-[#c9d1d9]" tip="거래량 가중 평균 가격. 기관 매매 기준점" />
+          <SRRow label="Pivot R1" value={sr.pivotR1} color="text-[#f85149]" tip="피봇 포인트 기반 1차 저항선" />
+          <SRRow label="Pivot S1" value={sr.pivotS1} color="text-[#3fb950]" tip="피봇 포인트 기반 1차 지지선" />
         </div>
         {ai?.srInterpretation && <InterpretationBox text={ai.srInterpretation} />}
       </Card>
@@ -245,19 +259,19 @@ function RiskTab({ ruleEngine, ai }: { ruleEngine: RuleEngineResults | null; ai:
   );
 }
 
-function RiskFactorRow({ label, score, last }: { label: string; score: number; last?: boolean }) {
+function RiskFactorRow({ label, score, last, tip }: { label: string; score: number; last?: boolean; tip?: string }) {
   return (
     <div className={`flex justify-between py-[3px] ${last ? '' : 'border-b border-[#21262d]'}`}>
-      <span className="text-[#8b949e]">{label}</span>
+      <span className="text-[#8b949e]">{tip ? <Tip text={tip}>{label} ⓘ</Tip> : label}</span>
       <span className={`${factorColor(score)} font-semibold`}>{score}/2</span>
     </div>
   );
 }
 
-function SRRow({ label, value, color }: { label: string; value: number; color: string }) {
+function SRRow({ label, value, color, tip }: { label: string; value: number; color: string; tip?: string }) {
   return (
     <div className="flex justify-between">
-      <span>{label}</span>
+      <span>{tip ? <Tip text={tip}>{label} ⓘ</Tip> : label}</span>
       <span className={color}>${value.toLocaleString()}</span>
     </div>
   );
@@ -289,19 +303,19 @@ function FundingTab({ ruleEngine, ai }: { ruleEngine: RuleEngineResults | null; 
 
       <div className="text-[11px] mb-2">
         <div className="flex justify-between py-[3px] border-b border-[#21262d]">
-          <span className="text-[#8b949e]">1h Trend</span>
+          <span className="text-[#8b949e]"><Tip text="최근 1시간 펀딩 레이트 추세">1h Trend ⓘ</Tip></span>
           <span className={t1.color}>{t1.arrow} {f.trend1h}</span>
         </div>
         <div className="flex justify-between py-[3px] border-b border-[#21262d]">
-          <span className="text-[#8b949e]">4h Trend</span>
+          <span className="text-[#8b949e]"><Tip text="최근 4시간 펀딩 레이트 추세">4h Trend ⓘ</Tip></span>
           <span className={t4.color}>{t4.arrow} {f.trend4h}</span>
         </div>
         <div className="flex justify-between py-[3px] border-b border-[#21262d]">
-          <span className="text-[#8b949e]">24h Trend</span>
+          <span className="text-[#8b949e]"><Tip text="최근 24시간 펀딩 레이트 추세">24h Trend ⓘ</Tip></span>
           <span className={t24.color}>{t24.arrow} {f.trend24h}</span>
         </div>
         <div className="flex justify-between py-[3px]">
-          <span className="text-[#8b949e]">Z-Score</span>
+          <span className="text-[#8b949e]"><Tip text="30일 평균 대비 현재 펀딩 레이트의 표준편차. ±2σ 이상이면 극단">Z-Score ⓘ</Tip></span>
           <span className={`font-semibold ${Math.abs(f.zScore) >= 2 ? 'text-[#f85149]' : 'text-[#c9d1d9]'}`}>
             {f.zScore >= 0 ? '+' : ''}{f.zScore.toFixed(1)}σ
           </span>
@@ -320,7 +334,7 @@ function FundingTab({ ruleEngine, ai }: { ruleEngine: RuleEngineResults | null; 
 
       {/* Mean Reversion */}
       <div className="text-[12px] text-[#8b949e]">
-        📌 Mean Reversion: 평균 회귀 가능성 <span className="font-semibold text-[#c9d1d9]">{f.meanReversionProbability}</span>
+        📌 <Tip text="펀딩 레이트가 평균으로 돌아갈 확률. Z-Score 기반 계산">Mean Reversion ⓘ</Tip>: 평균 회귀 가능성 <span className="font-semibold text-[#c9d1d9]">{f.meanReversionProbability}</span>
       </div>
 
       {ai?.fundingInterpretation && <InterpretationBox text={ai.fundingInterpretation} />}
@@ -363,7 +377,7 @@ function OITab({ ruleEngine, ai }: { ruleEngine: RuleEngineResults | null; ai: A
 
       {/* Scenario */}
       <div className="text-[12px] text-[#c9d1d9] mb-2">
-        📊 시나리오: <span className="font-semibold">{oi.scenario}</span>
+        📊 <Tip text="OI 증감 + 가격 증감 조합으로 판단. 신규 진입/청산 여부와 추세 방향을 나타냄">시나리오 ⓘ</Tip>: <span className="font-semibold">{oi.scenario}</span>
       </div>
 
       {/* OI Spike */}

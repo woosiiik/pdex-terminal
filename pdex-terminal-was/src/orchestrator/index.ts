@@ -1,6 +1,7 @@
 import { config } from "../config/index.js";
 import * as mds from "../data/market-data-service.js";
 import { saveAnalysisResult, saveFundingRate, saveOIData, getOIHistory } from "../data/db.js";
+import type { AnalysisExtra } from "../data/db.js";
 import { calculateRiskScore } from "../rule-engine/risk-calculator.js";
 import { calculateSupportResistance } from "../rule-engine/sr-calculator.js";
 import { analyzeFunding } from "../rule-engine/funding-analyzer.js";
@@ -48,13 +49,15 @@ function mergeFreshness(items: DataFreshness[]): DataFreshness {
 export async function analyzePosition(
   positions: OpenPosition[],
   symbol: string,
+  extra?: { userAddress?: string; exchange?: string },
 ): Promise<PositionAnalysisResponse> {
-  return withTimeout(runPositionAnalysis(positions, symbol), config.analysisTimeout, "Position analysis");
+  return withTimeout(runPositionAnalysis(positions, symbol, extra), config.analysisTimeout, "Position analysis");
 }
 
 async function runPositionAnalysis(
   positions: OpenPosition[],
   symbol: string,
+  extra?: { userAddress?: string; exchange?: string },
 ): Promise<PositionAnalysisResponse> {
   // 1. Fetch market data in parallel
   const [priceRes, candles7dRes, candles30dRes, recentCandlesRes, fundingRateRes, fundingHistRes, oiRes] =
@@ -119,7 +122,16 @@ async function runPositionAnalysis(
   }
 
   // 4. Fire-and-forget DB save
-  saveAnalysisResult(symbol, "position", ruleEngine, aiInterpretation ? JSON.stringify(aiInterpretation) : null).catch((e) =>
+  const matchedPos = positions.find((p) => p.coin === symbol) ?? positions[0];
+  const analysisExtra: AnalysisExtra = {
+    userAddress: extra?.userAddress,
+    exchange: extra?.exchange ?? "hyperliquid",
+    side: matchedPos?.side,
+    leverage: matchedPos?.leverage,
+    entryPrice: matchedPos?.entryPrice,
+    markPrice: currentPrice,
+  };
+  saveAnalysisResult(symbol, "position", ruleEngine, aiInterpretation ? JSON.stringify(aiInterpretation) : null, analysisExtra).catch((e) =>
     console.error("DB save failed:", e),
   );
   saveFundingRate(symbol, fundingRate, new Date()).catch(() => {});

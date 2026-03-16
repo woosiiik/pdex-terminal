@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PDEX Terminal",
-  description: "Hyperliquid P-DEX 실시간 모니터링 및 AI 분석 터미널",
+  title: "Calico Terminal",
+  description: "Hyperliquid 실시간 모니터링 및 AI 분석 터미널",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
