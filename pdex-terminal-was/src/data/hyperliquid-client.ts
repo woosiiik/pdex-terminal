@@ -1,5 +1,5 @@
 import { config } from "../config/index.js";
-import type { CandleData, FundingRateEntry, OIData, MarketMeta } from "../types/index.js";
+import type { CandleData, FundingRateEntry, OIData, MarketMeta, AssetCtx, MarketCoinSummary } from "../types/index.js";
 
 const BASE_URL = config.hyperliquid.apiUrl;
 
@@ -93,4 +93,27 @@ export async function getL2Book(symbol: string, nSigFigs: number = 5): Promise<{
     bids: (data.levels[0] ?? []).map((l) => ({ px: l.px, sz: l.sz })),
     asks: (data.levels[1] ?? []).map((l) => ({ px: l.px, sz: l.sz })),
   };
+}
+
+export async function getMetaAndAssetCtxs(): Promise<[MarketMeta, AssetCtx[]]> {
+  const data = await postInfo({ type: "metaAndAssetCtxs" }) as [MarketMeta, AssetCtx[]];
+  return data;
+}
+
+export function buildMarketSummary(meta: MarketMeta, assetCtxs: AssetCtx[]): MarketCoinSummary[] {
+  return meta.universe.map((u, i) => {
+    const ctx = assetCtxs[i];
+    const markPx = parseFloat(ctx.markPx);
+    const prevDayPx = parseFloat(ctx.prevDayPx);
+    const changePercent24h = prevDayPx > 0 ? ((markPx - prevDayPx) / prevDayPx) * 100 : 0;
+    return {
+      coin: u.name,
+      markPx,
+      prevDayPx,
+      changePercent24h,
+      dayNtlVlm: parseFloat(ctx.dayNtlVlm),
+      funding: parseFloat(ctx.funding),
+      openInterest: parseFloat(ctx.openInterest),
+    };
+  });
 }

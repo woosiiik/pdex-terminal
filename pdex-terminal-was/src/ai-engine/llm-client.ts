@@ -71,21 +71,21 @@ async function callOpenAICompatible(
 }
 
 export async function callLLM(system: string, user: string): Promise<string | null> {
-  // 1) Gemini first
+  // 1) Groq first (free, fast)
+  if (config.groq.apiKey) {
+    try {
+      return await callOpenAICompatible(getGroq(), config.groq.model, system, user, "Groq");
+    } catch (err) {
+      console.warn("Groq failed:", (err as Error).message, "| prompt length:", system.length + user.length);
+    }
+  }
+
+  // 2) Gemini fallback
   if (config.gemini.apiKey) {
     try {
       return await callGemini(system, user);
     } catch (err) {
       console.warn("Gemini failed:", (err as Error).message);
-    }
-  }
-
-  // 2) Groq fallback (free)
-  if (config.groq.apiKey) {
-    try {
-      return await callOpenAICompatible(getGroq(), config.groq.model, system, user, "Groq");
-    } catch (err) {
-      console.warn("Groq failed:", (err as Error).message);
     }
   }
 

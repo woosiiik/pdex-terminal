@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDEX Terminal - Discover Mode Wireframe</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; height: 100vh; display: flex; flex-direction: column; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #161b22; border-bottom: 1px solid #30363d;
+    padding: 10px 20px; height: 56px; flex-shrink: 0;
+  }
+  .topbar .logo { font-size: 16px; font-weight: 700; color: #58a6ff; }
+  .topbar .center-group { display: flex; align-items: center; gap: 12px; }
+  .topbar .wallet-input { display: flex; align-items: center; gap: 8px; }
+  .topbar .wallet-input input {
+    background: #0d1117; border: 1px solid #30363d; color: #c9d1d9;
+    padding: 6px 12px; border-radius: 6px; width: 340px; font-size: 13px;
+  }
+  .topbar .stats { display: flex; gap: 24px; font-size: 13px; }
+  .topbar .stats .label { color: #8b949e; margin-right: 4px; }
+  .topbar .stats .risk-badge {
+    background: #f8514922; color: #f85149; padding: 2px 8px;
+    border-radius: 4px; font-weight: 600;
+  }
+
+  /* Mode Toggle */
+  .mode-toggle {
+    display: flex; background: #0d1117; border: 1px solid #30363d;
+    border-radius: 6px; overflow: hidden;
+  }
+  .mode-btn {
+    padding: 5px 14px; font-size: 12px; cursor: pointer;
+    color: #8b949e; border: none; background: transparent;
+    transition: all 0.2s; font-weight: 500;
+  }
+  .mode-btn.active {
+    background: #58a6ff22; color: #58a6ff; font-weight: 600;
+  }
+  .mode-btn:hover:not(.active) { color: #c9d1d9; }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+  .panel { border-right: 1px solid #30363d; display: flex; flex-direction: column; }
+  .panel:last-child { border-right: none; }
+  .panel-header {
+    display: flex; background: #161b22; border-bottom: 1px solid #30363d;
+    padding: 0; flex-shrink: 0;
+  }
+  .tab {
+    padding: 10px 16px; font-size: 12px; color: #8b949e; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.2s;
+  }
+  .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+  .tab:hover { color: #c9d1d9; }
+  .panel-body { flex: 1; padding: 12px; overflow-y: auto; }
+
+  .left { width: 280px; flex-shrink: 0; }
+  .center { flex: 1; display: flex; flex-direction: column; }
+  .right { width: 360px; flex-shrink: 0; }
+
+  .bottombar {
+    background: #161b22; border-top: 1px solid #30363d;
+    height: 100px; flex-shrink: 0; display: flex; flex-direction: column;
+  }
+
+  /* Discover Card */
+  .discover-card {
+    background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+    padding: 14px; margin-bottom: 10px; cursor: pointer;
+    transition: border-color 0.2s, background 0.15s;
+  }
+  .discover-card:hover { border-color: #58a6ff; background: #161b2288; }
+  .discover-card.selected { border-color: #58a6ff; border-width: 2px; }
+
+  .badge-long {
+    background: #238636; color: #fff; padding: 2px 8px;
+    border-radius: 4px; font-size: 11px; font-weight: 600;
+  }
+  .badge-short {
+    background: #f85149; color: #fff; padding: 2px 8px;
+    border-radius: 4px; font-size: 11px; font-weight: 600;
+  }
+  .badge-confidence {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600;
+  }
+  .conf-high { background: #3fb95022; color: #3fb950; }
+  .conf-medium { background: #d2992222; color: #d29922; }
+
+  .tp-sl-row {
+    display: flex; gap: 8px; margin-top: 8px;
+  }
+  .tp-box, .sl-box {
+    flex: 1; border-radius: 6px; padding: 6px 10px; text-align: center;
+  }
+  .tp-box { background: #3fb95012; border: 1px solid #3fb95033; }
+  .sl-box { background: #f8514912; border: 1px solid #f8514933; }
+  .tp-box .label, .sl-box .label { font-size: 10px; color: #8b949e; }
+  .tp-box .value { font-size: 13px; font-weight: 700; color: #3fb950; }
+  .sl-box .value { font-size: 13px; font-weight: 700; color: #f85149; }
+
+  .reason-text {
+    font-size: 11px; color: #8b949e; line-height: 1.6; margin-top: 8px;
+  }
+
+  /* Refresh button */
+  .refresh-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: #238636; color: #fff; border: none; padding: 10px;
+    border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;
+    width: 100%; margin-bottom: 12px; transition: background 0.2s;
+  }
+  .refresh-btn:hover { background: #2ea043; }
+
+  .timestamp {
+    text-align: center; font-size: 11px; color: #484f58; margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== TOP BAR ========== -->
+<div class="topbar">
+  <div class="logo">⚡ PDEX Terminal</div>
+  <div class="center-group">
+    <!-- Mode Toggle: discover 활성 -->
+    <div class="mode-toggle">
+      <button class="mode-btn active" onclick="switchMode('discover')">추천</button>
+      <button class="mode-btn" onclick="switchMode('position')">포지션</button>
+      <button class="mode-btn" onclick="switchMode('order')">오더</button>
+    </div>
+    <div class="wallet-input">
+      <div style="display:flex; align-items:center; gap:6px; background:#161b22; border:1px solid #30363d; padding:6px 12px; border-radius:6px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:#3fb950; display:inline-block;"></span>
+        <span style="color:#c9d1d9; font-size:13px; font-weight:600;">Hyperliquid</span>
+      </div>
+      <div style="background:#0d1117; border:1px solid #30363d; color:#c9d1d9; padding:6px 12px; border-radius:6px; font-size:13px; font-family:monospace;">
+        0x1a2B...9fC4
+      </div>
+      <button style="background:#30363d; color:#c9d1d9; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px;">해제</button>
+    </div>
+  </div>
+  <div class="stats">
+    <span><span class="label">Risk</span><span class="risk-badge">7/10</span></span>
+  </div>
+</div>
+
+<!-- ========== MAIN CONTENT ========== -->
+<div class="main">
+
+  <!-- LEFT: Portfolio (기존과 동일) -->
+  <div class="panel left">
+    <div class="panel-header">
+      <div class="tab active">포트폴리오</div>
+    </div>
+    <div class="panel-body">
+      <!-- 계정 요약 -->
+      <div style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:4px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="color:#8b949e;">총 자산</span><span style="font-weight:600;">$48,230.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="color:#8b949e;">미실현 PnL</span><span style="color:#3fb950; font-weight:600;">+$366.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="color:#8b949e;">사용 마진</span><span>$12,400.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;">
+          <span style="color:#8b949e;">가용 마진</span><span>$35,830.00</span>
+        </div>
+      </div>
+
+      <!-- 오픈 포지션 -->
+      <div style="font-size:11px; color:#8b949e; text-transform:uppercase; letter-spacing:1px; margin:14px 0 8px;">오픈 포지션</div>
+
+      <div style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:6px; cursor:pointer;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          <span style="font-weight:600; color:#58a6ff; font-size:13px;">BTC-PERP</span>
+          <span style="background:#238636; color:#fff; padding:1px 8px; border-radius:4px; font-size:11px;">LONG 10x</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#8b949e; margin-bottom:3px;">
+          <span>진입 $67,240</span><span>현재 $68,100</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px;">
+          <span style="color:#3fb950; font-weight:600;">+$430.00 (+1.28%)</span>
+          <span style="color:#8b949e;">청산 $60,516</span>
+        </div>
+      </div>
+
+      <div style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:6px; cursor:pointer;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          <span style="font-weight:600; color:#58a6ff; font-size:13px;">ETH-PERP</span>
+          <span style="background:#f85149; color:#fff; padding:1px 8px; border-radius:4px; font-size:11px;">SHORT 5x</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#8b949e; margin-bottom:3px;">
+          <span>진입 $3,820</span><span>현재 $3,790</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px;">
+          <span style="color:#3fb950; font-weight:600;">+$60.00 (+0.79%)</span>
+          <span style="color:#8b949e;">청산 $4,584</span>
+        </div>
+      </div>
+
+      <!-- 오픈 오더 -->
+      <div style="font-size:11px; color:#8b949e; text-transform:uppercase; letter-spacing:1px; margin:14px 0 8px;">오픈 오더</div>
+
+      <div style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:6px; cursor:pointer;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          <span style="font-weight:600; color:#58a6ff; font-size:13px;">BTC-PERP</span>
+          <span style="background:#23863644; color:#3fb950; padding:1px 8px; border-radius:4px; font-size:11px;">매수 지정가</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#8b949e;">
+          <span>$65,000.00</span><span>0.2 BTC</span><span>14:20</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: Chart (discover 모드에서도 차트 표시 — 추천 코인 클릭 시 전환) -->
+  <div class="panel center">
+    <div class="panel-header" style="align-items:center; padding:0 12px; gap:0;">
+      <div style="display:flex; align-items:center; gap:6px; padding:8px 12px 8px 0; border-right:1px solid #30363d; margin-right:12px;">
+        <span id="market-coin" style="font-size:14px; font-weight:700; color:#fff;">DOGE-USDC</span>
+        <span style="font-size:11px; color:#8b949e;">▾</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; font-size:11px; flex:1;">
+        <div><span style="color:#484f58;">Mark</span><br/><span style="color:#c9d1d9;">0.1842</span></div>
+        <div><span style="color:#484f58;">24h Change</span><br/><span style="color:#3fb950;">+8.2%</span></div>
+        <div><span style="color:#484f58;">24h Volume</span><br/><span style="color:#c9d1d9;">$892M</span></div>
+        <div><span style="color:#484f58;">Open Interest</span><br/><span style="color:#c9d1d9;">$245M</span></div>
+        <div><span style="color:#484f58;">Funding</span><br/><span style="color:#d29922;">+0.0420%</span></div>
+      </div>
+    </div>
+    <!-- 타임프레임 바 -->
+    <div style="display:flex; align-items:center; background:#0d1117; border-bottom:1px solid #30363d; padding:4px 12px; gap:2px; flex-shrink:0;">
+      <span class="tab" style="font-size:11px; padding:6px 8px;">1m</span>
+      <span class="tab" style="font-size:11px; padding:6px 8px;">5m</span>
+      <span class="tab active" style="font-size:11px; padding:6px 8px;">15m</span>
+      <span class="tab" style="font-size:11px; padding:6px 8px;">1H</span>
+      <span class="tab" style="font-size:11px; padding:6px 8px;">4H</span>
+      <span class="tab" style="font-size:11px; padding:6px 8px;">1D</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:row; overflow:hidden;">
+      <!-- Chart Area -->
+      <div style="flex:1; position:relative; min-height:0;">
+        <svg width="100%" height="100%" viewBox="0 0 600 400" preserveAspectRatio="none" style="position:absolute; top:0; left:0;">
+          <line x1="0" y1="100" x2="600" y2="100" stroke="#21262d" stroke-width="1"/>
+          <line x1="0" y1="200" x2="600" y2="200" stroke="#21262d" stroke-width="1"/>
+          <line x1="0" y1="300" x2="600" y2="300" stroke="#21262d" stroke-width="1"/>
+          <g transform="translate(40,0)"><line x1="0" y1="280" x2="0" y2="350" stroke="#f85149" stroke-width="1"/><rect x="-7" y="290" width="14" height="40" fill="#f85149" rx="1"/></g>
+          <g transform="translate(75,0)"><line x1="0" y1="260" x2="0" y2="340" stroke="#f85149" stroke-width="1"/><rect x="-7" y="270" width="14" height="45" fill="#f85149" rx="1"/></g>
+          <g transform="translate(110,0)"><line x1="0" y1="240" x2="0" y2="320" stroke="#3fb950" stroke-width="1"/><rect x="-7" y="260" width="14" height="35" fill="#3fb950" rx="1"/></g>
+          <g transform="translate(145,0)"><line x1="0" y1="220" x2="0" y2="310" stroke="#3fb950" stroke-width="1"/><rect x="-7" y="240" width="14" height="45" fill="#3fb950" rx="1"/></g>
+          <g transform="translate(180,0)"><line x1="0" y1="200" x2="0" y2="290" stroke="#3fb950" stroke-width="1"/><rect x="-7" y="215" width="14" height="50" fill="#3fb950" rx="1"/></g>
+          <g transform="translate(215,0)"><line x1="0" y1="180" x2="0" y2="270" stroke="#f85149" stroke-width="1"/><rect x="-7" y="185" width="14" height="55" fill="#f85149" rx="1"/></g>
+          <g transform="translate(250,0)"><line x1="0" y1="170" x2="0" y2="260" stroke="#3fb950" stroke-width="1"/><rect x="-7" y="190" width="14" height="40" fill="#3fb950" rx="1"/></g>
+          <g transform="translate(285,0)"><line x1="0" y1="140" x2="0" y2="230" stroke="#3fb950" stroke-width="1"/><rect x="-7" y="155" width="14" height="50" fill="#3fb950" rx="1"/></g>
+          <g transform="translate(320,0)"><line x1="0" y1="120" x2="0" y2="210" stroke="#3fb950" stroke-width="1"/><rect x="-7" y="135" width="14" height="48" fill="#3fb950" rx="1"/></g>
+          <g transform="translate(355,0)"><line x1="0" y1="100" x2="0" y2="190" stroke="#f85149" stroke-width="1"/><rect x="-7" y="105" width="14" height="55" fill="#f85149" rx="1"/></g>
+          <g transform="translate(390,0)"><line x1="0" y1="85" x2="0" y2="175" stroke="#3fb950" stroke-width="1"/><rect x="-7" y="100" width="14" height="45" fill="#3fb950" rx="1"/></g>
+          <g transform="translate(425,0)"><line x1="0" y1="70" x2="0" y2="160" stroke="#3fb950" stroke-width="1"/><rect x="-7" y="80" width="14" height="55" fill="#3fb950" rx="1"/></g>
+          <g transform="translate(460,0)"><line x1="0" y1="60" x2="0" y2="150" stroke="#3fb950" stroke-width="1"/><rect x="-7" y="72" width="14" height="48" fill="#3fb950" rx="1"/></g>
+          <g transform="translate(495,0)"><line x1="0" y1="55" x2="0" y2="140" stroke="#f85149" stroke-width="1"/><rect x="-7" y="60" width="14" height="50" fill="#f85149" rx="1"/></g>
+          <g transform="translate(530,0)"><line x1="0" y1="48" x2="0" y2="135" stroke="#3fb950" stroke-width="1"/><rect x="-7" y="58" width="14" height="48" fill="#3fb950" rx="1"/></g>
+          <!-- Volume bars -->
+          <rect x="33" y="365" width="14" height="20" fill="#f8514944" rx="1"/>
+          <rect x="68" y="360" width="14" height="25" fill="#f8514944" rx="1"/>
+          <rect x="103" y="355" width="14" height="30" fill="#3fb95044" rx="1"/>
+          <rect x="138" y="345" width="14" height="40" fill="#3fb95044" rx="1"/>
+          <rect x="173" y="335" width="14" height="50" fill="#3fb95044" rx="1"/>
+          <rect x="208" y="350" width="14" height="35" fill="#f8514944" rx="1"/>
+          <rect x="243" y="355" width="14" height="30" fill="#3fb95044" rx="1"/>
+          <rect x="278" y="330" width="14" height="55" fill="#3fb95044" rx="1"/>
+          <rect x="313" y="325" width="14" height="60" fill="#3fb95044" rx="1"/>
+          <rect x="348" y="345" width="14" height="40" fill="#f8514944" rx="1"/>
+          <rect x="383" y="340" width="14" height="45" fill="#3fb95044" rx="1"/>
+          <rect x="418" y="320" width="14" height="65" fill="#3fb95044" rx="1"/>
+          <rect x="453" y="315" width="14" height="70" fill="#3fb95044" rx="1"/>
+          <rect x="488" y="345" width="14" height="40" fill="#f8514944" rx="1"/>
+          <rect x="523" y="330" width="14" height="55" fill="#3fb95044" rx="1"/>
+        </svg>
+        <!-- 추천 코인 표시 오버레이 -->
+        <div style="position:absolute; top:12px; left:12px; background:#58a6ff22; border:1px solid #58a6ff44; border-radius:6px; padding:4px 10px; font-size:11px; color:#58a6ff; font-weight:600;">
+          🔍 AI 추천 코인 차트
+        </div>
+      </div>
+
+      <!-- Orderbook Area -->
+      <div style="width:200px; flex-shrink:0; border-left:1px solid #30363d; display:flex; flex-direction:column; padding:8px 10px; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:10px; color:#8b949e; text-transform:uppercase; letter-spacing:0.5px;">
+          <span>가격</span><span>수량</span><span>누적</span>
+        </div>
+        <div style="font-size:11px; font-family:monospace;">
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:20%; background:#f8514915;"></div>
+            <span style="color:#f85149;">0.1860</span><span>52K</span><span style="color:#8b949e;">180K</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:35%; background:#f8514915;"></div>
+            <span style="color:#f85149;">0.1855</span><span>85K</span><span style="color:#8b949e;">128K</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:15%; background:#f8514915;"></div>
+            <span style="color:#f85149;">0.1850</span><span>43K</span><span style="color:#8b949e;">43K</span>
+          </div>
+        </div>
+        <div style="text-align:center; padding:6px 0; font-size:11px; color:#58a6ff; border-top:1px solid #30363d; border-bottom:1px solid #30363d; margin:4px 0;">
+          $0.0002 <span style="color:#8b949e; font-size:10px;">(0.11%)</span>
+        </div>
+        <div style="font-size:11px; font-family:monospace;">
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:40%; background:#3fb95015;"></div>
+            <span style="color:#3fb950;">0.1842</span><span>95K</span><span style="color:#8b949e;">95K</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:55%; background:#3fb95015;"></div>
+            <span style="color:#3fb950;">0.1838</span><span>120K</span><span style="color:#8b949e;">215K</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0; position:relative;">
+            <div style="position:absolute; right:0; top:0; bottom:0; width:30%; background:#3fb95015;"></div>
+            <span style="color:#3fb950;">0.1835</span><span>68K</span><span style="color:#8b949e;">283K</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: AI 코인 추천 패널 (Discover Mode) -->
+  <div class="panel right">
+    <div class="panel-header" style="justify-content:space-between; align-items:center; padding:0 12px;">
+      <div class="tab active">🔍 코인 추천</div>
+      <span style="font-size:10px; color:#484f58;">Powered by AI</span>
+    </div>
+    <div class="panel-body">
+
+      <!-- Refresh Button -->
+      <button class="refresh-btn" onclick="alert('새로운 추천을 불러옵니다...')">
+        🔄 새로운 추천 받기
+      </button>
+
+      <!-- Timestamp -->
+      <div class="timestamp">마지막 분석: 14:32:05 KST</div>
+
+      <!-- ===== Card 1: DOGE (선택됨) ===== -->
+      <div class="discover-card selected" onclick="selectDiscover('DOGE')">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:14px; font-weight:700; color:#fff;">DOGE</span>
+            <span class="badge-long">LONG</span>
+          </div>
+          <span class="badge-confidence conf-high">신뢰도 높음</span>
+        </div>
+        <div style="font-size:12px; color:#c9d1d9; margin-bottom:4px;">
+          현재가 <span style="color:#58a6ff; font-weight:600;">$0.1842</span>
+          <span style="color:#3fb950; font-size:11px; margin-left:6px;">+8.2%</span>
+        </div>
+        <div class="tp-sl-row">
+          <div class="tp-box">
+            <div class="label">TP (목표)</div>
+            <div class="value">$0.2100</div>
+          </div>
+          <div class="sl-box">
+            <div class="label">SL (손절)</div>
+            <div class="value">$0.1680</div>
+          </div>
+        </div>
+        <div class="reason-text">
+          OI 급증 +12.4%, 펀딩 레이트 안정, 거래량 폭증. 밈코인 모멘텀 + 기술적 돌파 패턴 확인. 단기 상승 추세 강화 시그널.
+        </div>
+      </div>
+
+      <!-- ===== Card 2: PEPE ===== -->
+      <div class="discover-card" onclick="selectDiscover('PEPE')">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:14px; font-weight:700; color:#fff;">PEPE</span>
+            <span class="badge-long">LONG</span>
+          </div>
+          <span class="badge-confidence conf-medium">신뢰도 보통</span>
+        </div>
+        <div style="font-size:12px; color:#c9d1d9; margin-bottom:4px;">
+          현재가 <span style="color:#58a6ff; font-weight:600;">$0.00001245</span>
+          <span style="color:#3fb950; font-size:11px; margin-left:6px;">+5.7%</span>
+        </div>
+        <div class="tp-sl-row">
+          <div class="tp-box">
+            <div class="label">TP (목표)</div>
+            <div class="value">$0.00001450</div>
+          </div>
+          <div class="sl-box">
+            <div class="label">SL (손절)</div>
+            <div class="value">$0.00001100</div>
+          </div>
+        </div>
+        <div class="reason-text">
+          거래량 24h +340% 급증, OI 상승 중. 소셜 미디어 언급량 증가. 저항선 $0.0000130 돌파 시 추가 상승 여력.
+        </div>
+      </div>
+
+      <!-- ===== Card 3: WIF ===== -->
+      <div class="discover-card" onclick="selectDiscover('WIF')">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:14px; font-weight:700; color:#fff;">WIF</span>
+            <span class="badge-short">SHORT</span>
+          </div>
+          <span class="badge-confidence conf-medium">신뢰도 보통</span>
+        </div>
+        <div style="font-size:12px; color:#c9d1d9; margin-bottom:4px;">
+          현재가 <span style="color:#58a6ff; font-weight:600;">$2.34</span>
+          <span style="color:#f85149; font-size:11px; margin-left:6px;">-3.1%</span>
+        </div>
+        <div class="tp-sl-row">
+          <div class="tp-box">
+            <div class="label">TP (목표)</div>
+            <div class="value">$1.95</div>
+          </div>
+          <div class="sl-box">
+            <div class="label">SL (손절)</div>
+            <div class="value">$2.60</div>
+          </div>
+        </div>
+        <div class="reason-text">
+          펀딩 레이트 +0.12% 극단 롱 과밀. OI 감소 시작, 거래량 하락. 숏 스퀴즈 후 되돌림 패턴. 하락 반전 시그널.
+        </div>
+      </div>
+
+      <!-- ===== Card 4: ARB ===== -->
+      <div class="discover-card" onclick="selectDiscover('ARB')">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:14px; font-weight:700; color:#fff;">ARB</span>
+            <span class="badge-long">LONG</span>
+          </div>
+          <span class="badge-confidence conf-high">신뢰도 높음</span>
+        </div>
+        <div style="font-size:12px; color:#c9d1d9; margin-bottom:4px;">
+          현재가 <span style="color:#58a6ff; font-weight:600;">$1.12</span>
+          <span style="color:#3fb950; font-size:11px; margin-left:6px;">+4.8%</span>
+        </div>
+        <div class="tp-sl-row">
+          <div class="tp-box">
+            <div class="label">TP (목표)</div>
+            <div class="value">$1.35</div>
+          </div>
+          <div class="sl-box">
+            <div class="label">SL (손절)</div>
+            <div class="value">$0.98</div>
+          </div>
+        </div>
+        <div class="reason-text">
+          L2 섹터 강세, TVL 증가 추세. 지지선 $1.05 확인 후 반등. OI +6.2% 신규 롱 진입 증가. 중기 상승 모멘텀.
+        </div>
+      </div>
+
+      <!-- ===== Card 5: ONDO ===== -->
+      <div class="discover-card" onclick="selectDiscover('ONDO')">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:14px; font-weight:700; color:#fff;">ONDO</span>
+            <span class="badge-long">LONG</span>
+          </div>
+          <span class="badge-confidence conf-medium">신뢰도 보통</span>
+        </div>
+        <div style="font-size:12px; color:#c9d1d9; margin-bottom:4px;">
+          현재가 <span style="color:#58a6ff; font-weight:600;">$1.48</span>
+          <span style="color:#3fb950; font-size:11px; margin-left:6px;">+6.1%</span>
+        </div>
+        <div class="tp-sl-row">
+          <div class="tp-box">
+            <div class="label">TP (목표)</div>
+            <div class="value">$1.80</div>
+          </div>
+          <div class="sl-box">
+            <div class="label">SL (손절)</div>
+            <div class="value">$1.28</div>
+          </div>
+        </div>
+        <div class="reason-text">
+          RWA 섹터 관심 급증, 거래량 +180%. 기관 매수세 유입 시그널. $1.50 저항선 돌파 시 가격 발견 구간 진입.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end .main -->
+
+<!-- ========== BOTTOM BAR ========== -->
+<div class="bottombar">
+  <div class="panel-header">
+    <div class="tab active">알림</div>
+    <div class="tab">Trade Journal</div>
+  </div>
+  <div style="padding:8px 16px; font-size:12px; overflow-y:auto; flex:1;">
+    <div style="display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid #21262d;">
+      <span style="color:#58a6ff;">🔍</span>
+      <span style="color:#8b949e;">14:32:05</span>
+      <span>AI 코인 추천 업데이트 — DOGE, PEPE, WIF, ARB, ONDO</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid #21262d;">
+      <span style="color:#d29922;">⚠</span>
+      <span style="color:#8b949e;">14:28:12</span>
+      <span>BTC-PERP 펀딩 레이트 극단 수준 (+0.065%) — 롱 포지션 비용 증가 주의</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:4px 0;">
+      <span style="color:#3fb950;">✓</span>
+      <span style="color:#8b949e;">14:15:30</span>
+      <span>ETH-PERP 숏 포지션 수익 목표 도달 근접 ($3,780)</span>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchMode(mode) {
+  document.querySelectorAll('.mode-btn').forEach(function(btn) {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  if (mode !== 'discover') {
+    alert(mode + ' 모드로 전환 — 기존 wireframe.html 참고');
+  }
+}
+
+function selectDiscover(coin) {
+  document.querySelectorAll('.discover-card').forEach(function(card) {
+    card.classList.remove('selected');
+  });
+  event.currentTarget.classList.add('selected');
+  document.getElementById('market-coin').textContent = coin + '-USDC';
+}
+</script>
+
+</body>
+</html>

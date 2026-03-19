@@ -257,6 +257,7 @@ export interface PositionAnalysisResponse {
   dataFreshness: DataFreshness;
   ruleEngine: RuleEngineResults;
   aiInterpretation: AIInterpretation | null;
+  strategyAdvice: StrategyAdvice | null;
 }
 
 export interface FundingAnalysisResponse {
@@ -325,4 +326,65 @@ export interface OrderMarketContext {
   volatility24h: number;
   fundingRate: number;
   l2Book: L2Book | null;
+}
+
+// ============================================================
+// Strategy Advice (AI-generated TP/SL + Strategy)
+// ============================================================
+
+export interface StrategyTimeframe {
+  period: string;
+  tp: number;
+  sl: number;
+  outlook: string;
+  keyLevel: string;
+  tip: string;
+}
+
+export interface StrategyAdvice {
+  shortTerm: StrategyTimeframe;
+  midTerm: StrategyTimeframe;
+}
+
+// ============================================================
+// Discover (Coin Recommendation) Types
+// ============================================================
+
+export interface AssetCtx {
+  funding: string;
+  openInterest: string;
+  prevDayPx: string;
+  dayNtlVlm: string;
+  premium: string;
+  oraclePx: string;
+  markPx: string;
+  midPx: string;
+  impactPxs: string[];
+}
+
+export interface MarketCoinSummary {
+  coin: string;
+  markPx: number;
+  prevDayPx: number;
+  changePercent24h: number;
+  dayNtlVlm: number;
+  funding: number;
+  openInterest: number;
+}
+
+export interface DiscoverRecommendation {
+  coin: string;
+  direction: "LONG" | "SHORT";
+  currentPrice: number;
+  changePercent24h: number;
+  tp: number;
+  sl: number;
+  confidence: "high" | "medium" | "low";
+  reason: string;
+}
+
+export interface DiscoverResponse {
+  success: boolean;
+  timestamp: string;
+  recommendations: DiscoverRecommendation[];
 }

@@ -8,9 +8,10 @@ import type {
   RuleEngineResults,
   OrderAnalysisRuleEngineResults,
   OrderAnalysisAIInterpretation,
+  StrategyAdvice,
 } from '@/lib/types';
 
-type PositionTabId = 'risk' | 'funding' | 'oi' | 'liq' | 'suggest';
+type PositionTabId = 'risk' | 'funding' | 'oi' | 'liq' | 'strategy' | 'suggest';
 type OrderTabId = 'order-strategy' | 'order-execution' | 'order-concentration' | 'order-impact' | 'order-suggest' | 'order-change';
 
 const POSITION_TABS: { id: PositionTabId; label: string; tooltip: string }[] = [
@@ -18,6 +19,7 @@ const POSITION_TABS: { id: PositionTabId; label: string; tooltip: string }[] = [
   { id: 'funding', label: '펀딩', tooltip: '현재 펀딩 레이트와 추세, Z-Score 기반 평균 회귀 가능성 분석' },
   { id: 'oi', label: 'OI', tooltip: 'Open Interest 변화와 가격 변화를 조합한 시장 포지션 시나리오 분석' },
   { id: 'liq', label: '청산', tooltip: '현재가 근처의 롱/숏 청산 클러스터 분포 및 근접 경고' },
+  { id: 'strategy', label: '전략', tooltip: 'AI 기반 단기/중기 TP·SL 추천 및 트레이딩 전략' },
   { id: 'suggest', label: '제안', tooltip: 'Rule Engine + AI 종합 분석 결과 요약 및 제안' },
 ];
 
@@ -104,6 +106,7 @@ export default function AICopilotPanel() {
         {positionTab === 'funding' && <FundingTab ruleEngine={ruleEngine} ai={ai} />}
         {positionTab === 'oi' && <OITab ruleEngine={ruleEngine} ai={ai} />}
         {positionTab === 'liq' && <LiquidationTab ruleEngine={ruleEngine} ai={ai} />}
+        {positionTab === 'strategy' && <StrategyTab advice={positionAnalysis?.strategyAdvice ?? null} />}
         {positionTab === 'suggest' && <SuggestTab ruleEngine={ruleEngine} ai={ai} />}
       </div>
     </div>
@@ -788,6 +791,67 @@ function OrderChangeComingSoon() {
         <div className="text-[13px] font-semibold text-[#c9d1d9] mb-1">전략 변경 탐지</div>
         <div className="text-[11px] text-[#484f58] leading-[1.6]">
           주문 수정/취소/재배치 이벤트 기반<br />전략 변경 탐지 기능을 준비 중입니다
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+
+// ── Strategy Advice Tab (TP/SL) ──
+
+function StrategyTab({ advice }: { advice: StrategyAdvice | null }) {
+  if (!advice) {
+    return (
+      <div className="text-xs text-[#484f58] text-center py-4">
+        AI 전략 데이터가 없습니다 (LLM 응답 실패)
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <StrategyCard icon="📈" label="단기 전략" tf={advice.shortTerm} />
+      <StrategyCard icon="📊" label="중기 전략" tf={advice.midTerm} />
+    </>
+  );
+}
+
+function StrategyCard({ icon, label, tf }: { icon: string; label: string; tf: import('@/lib/types').StrategyTimeframe }) {
+  return (
+    <Card>
+      <div className="flex items-center gap-1.5 mb-2">
+        <span>{icon}</span>
+        <span className="text-[13px] font-semibold">{label}</span>
+        <span className="text-[11px] text-[#484f58]">({tf.period})</span>
+      </div>
+
+      {/* TP / SL */}
+      <div className="flex gap-2 mb-2.5">
+        <div className="flex-1 bg-[#3fb95012] border border-[#3fb95033] rounded-md px-2.5 py-1.5 text-center">
+          <div className="text-[10px] text-[#8b949e]">
+            <Tip text="Take Profit — 목표 익절 가격">TP ⓘ</Tip>
+          </div>
+          <div className="text-[13px] font-bold text-[#3fb950]">${tf.tp.toLocaleString()}</div>
+        </div>
+        <div className="flex-1 bg-[#f8514912] border border-[#f8514933] rounded-md px-2.5 py-1.5 text-center">
+          <div className="text-[10px] text-[#8b949e]">
+            <Tip text="Stop Loss — 손절 가격">SL ⓘ</Tip>
+          </div>
+          <div className="text-[13px] font-bold text-[#f85149]">${tf.sl.toLocaleString()}</div>
+        </div>
+      </div>
+
+      {/* Outlook + Key Level + Tip */}
+      <div className="text-[11px] space-y-1.5">
+        <div className="text-[#c9d1d9]">
+          <span className="text-[#8b949e]">관점: </span>{tf.outlook}
+        </div>
+        <div className="text-[#c9d1d9]">
+          <span className="text-[#8b949e]">핵심: </span>{tf.keyLevel}
+        </div>
+        <div className="text-[#d29922]">
+          💡 {tf.tip}
         </div>
       </div>
     </Card>

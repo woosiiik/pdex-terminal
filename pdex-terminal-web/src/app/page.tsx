@@ -6,6 +6,7 @@ import TopBar from '@/components/TopBar';
 import PortfolioPanel from '@/components/PortfolioPanel';
 import MarketPanel from '@/components/MarketPanel';
 import AICopilotPanel from '@/components/AICopilotPanel';
+import DiscoverPanel from '@/components/DiscoverPanel';
 import BottomBar from '@/components/BottomBar';
 import { useStore } from '@/stores/useStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -133,6 +134,7 @@ function ConnectedLayout() {
   const setPositionAnalysis = useStore((s) => s.setPositionAnalysis);
   const setOrderAnalysis = useStore((s) => s.setOrderAnalysis);
   const addAlert = useStore((s) => s.addAlert);
+  const fetchDiscoverRecommendations = useStore((s) => s.fetchDiscoverRecommendations);
 
   // Connect WebSocket for real-time data
   useWebSocket(walletAddress);
@@ -295,6 +297,14 @@ function ConnectedLayout() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCoin, selectedMode]);
 
+  // Auto-fetch discover recommendations when switching to discover mode
+  useEffect(() => {
+    if (selectedMode === 'discover') {
+      fetchDiscoverRecommendations();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMode]);
+
   return (
     <div className="flex flex-1 overflow-hidden">
       <div className="w-[280px] shrink-0 border-r border-[#30363d] overflow-y-auto">
@@ -304,7 +314,7 @@ function ConnectedLayout() {
         <MarketPanel />
       </div>
       <div className="w-[320px] shrink-0 border-l border-[#30363d] overflow-y-auto">
-        <AICopilotPanel />
+        {selectedMode === 'discover' ? <DiscoverPanel /> : <AICopilotPanel />}
       </div>
     </div>
   );

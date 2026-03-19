@@ -13,7 +13,9 @@ import type {
   OrderAnalysisResponse,
   Alert,
   ActiveAssetCtx,
+  DiscoverRecommendation,
 } from '@/lib/types';
+import { analyzeDiscover } from '@/lib/analysis-api';
 
 interface AppState {
   // Connection
@@ -36,7 +38,7 @@ interface AppState {
   activeAssetCtx: ActiveAssetCtx | null;
 
   // Selection mode (position or order click in PortfolioPanel)
-  selectedMode: 'position' | 'order' | null;
+  selectedMode: 'discover' | 'position' | 'order' | null;
 
   // AI Analysis
   positionAnalysis: PositionAnalysisResponse | null;
@@ -45,6 +47,11 @@ interface AppState {
   liquidationAnalysis: LiquidationAnalysisResponse | null;
   orderAnalysis: OrderAnalysisResponse | null;
   analysisLoading: boolean;
+
+  // Discover
+  discoverRecommendations: DiscoverRecommendation[] | null;
+  discoverLoading: boolean;
+  discoverLastUpdated: string | null;
 
   // Alerts
   alerts: Alert[];
@@ -58,7 +65,7 @@ interface AppState {
   setPositions: (positions: Position[]) => void;
   setOrders: (orders: Order[]) => void;
   setSelectedCoin: (coin: string | null) => void;
-  setSelectedMode: (mode: 'position' | 'order' | null) => void;
+  setSelectedMode: (mode: 'discover' | 'position' | 'order' | null) => void;
   setOrderbook: (orderbook: OrderbookData | null) => void;
   setCandles: (candles: CandleData[]) => void;
   setTimeframe: (timeframe: Timeframe) => void;
@@ -70,6 +77,10 @@ interface AppState {
   setLiquidationAnalysis: (analysis: LiquidationAnalysisResponse | null) => void;
   setOrderAnalysis: (analysis: OrderAnalysisResponse | null) => void;
   setAnalysisLoading: (loading: boolean) => void;
+  setDiscoverRecommendations: (recs: DiscoverRecommendation[] | null) => void;
+  setDiscoverLoading: (loading: boolean) => void;
+  setDiscoverLastUpdated: (ts: string | null) => void;
+  fetchDiscoverRecommendations: () => Promise<void>;
   addAlert: (alert: Omit<Alert, 'id'>) => void;
   clearAlerts: () => void;
   disconnect: () => void;
@@ -84,7 +95,7 @@ const initialState = {
   positions: [] as Position[],
   orders: [] as Order[],
   selectedCoin: null as string | null,
-  selectedMode: null as 'position' | 'order' | null,
+  selectedMode: null as 'discover' | 'position' | 'order' | null,
   orderbook: null as OrderbookData | null,
   candles: [] as CandleData[],
   timeframe: '15m' as Timeframe,
@@ -96,6 +107,9 @@ const initialState = {
   liquidationAnalysis: null as LiquidationAnalysisResponse | null,
   orderAnalysis: null as OrderAnalysisResponse | null,
   analysisLoading: false,
+  discoverRecommendations: null as DiscoverRecommendation[] | null,
+  discoverLoading: false,
+  discoverLastUpdated: null as string | null,
   alerts: [] as Alert[],
 };
 
@@ -122,6 +136,31 @@ export const useStore = create<AppState>((set) => ({
   setLiquidationAnalysis: (analysis) => set({ liquidationAnalysis: analysis }),
   setOrderAnalysis: (analysis) => set({ orderAnalysis: analysis }),
   setAnalysisLoading: (loading) => set({ analysisLoading: loading }),
+  setDiscoverRecommendations: (recs) => set({ discoverRecommendations: recs }),
+  setDiscoverLoading: (loading) => set({ discoverLoading: loading }),
+  setDiscoverLastUpdated: (ts) => set({ discoverLastUpdated: ts }),
+  fetchDiscoverRecommendations: async () => {
+    set({ discoverLoading: true });
+    try {
+      const res = await analyzeDiscover();
+      set({
+        discoverRecommendations: res.recommendations,
+        discoverLastUpdated: res.timestamp,
+      });
+    } catch (err) {
+      set((state) => ({
+        discoverRecommendations: null,
+        alerts: [...state.alerts, {
+          id: Date.now().toString(),
+          type: 'error' as const,
+          timestamp: Date.now(),
+          message: `추천 분석 실패: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        }],
+      }));
+    } finally {
+      set({ discoverLoading: false });
+    }
+  },
   addAlert: (alert) =>
     set((state) => ({
       alerts: [...state.alerts, { ...alert, id: Date.now().toString() }],

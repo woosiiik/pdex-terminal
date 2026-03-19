@@ -8,6 +8,7 @@ import type {
   OrderAnalysisResponse,
   HealthResponse,
   ErrorResponse,
+  DiscoverResponse,
 } from '@/lib/types';
 
 const BASE_URL =
@@ -121,4 +122,8 @@ export function analyzeOrder(
 
 export function checkHealth(): Promise<HealthResponse> {
   return get<HealthResponse>('/api/v1/health');
+}
+
+export function analyzeDiscover(): Promise<DiscoverResponse> {
+  return post<DiscoverResponse>('/api/v1/analysis/discover', {});
 }

@@ -10,6 +10,12 @@ const EXCHANGES = [
   { name: 'dYdX', color: '#6966ff', enabled: false },
 ] as const;
 
+const MODE_OPTIONS = [
+  { value: 'discover' as const, label: '추천' },
+  { value: 'position' as const, label: '포지션' },
+  { value: 'order' as const, label: '오더' },
+];
+
 function isValidWalletAddress(address: string): boolean {
   return /^0x[0-9a-fA-F]{40}$/.test(address);
 }
@@ -28,6 +34,8 @@ export default function TopBar() {
     error,
     positionAnalysis,
     disconnect,
+    selectedMode,
+    setSelectedMode,
   } = useStore();
 
   const [inputValue, setInputValue] = useState('');
@@ -189,8 +197,28 @@ export default function TopBar() {
         )}
       </div>
 
-      {/* Right: Risk Score */}
+      {/* Right: Mode Toggle + Risk Score */}
       <div className="flex items-center gap-6 text-[13px]">
+        {/* Mode Toggle */}
+        {isConnected && (
+          <div className="flex items-center bg-[#0d1117] border border-[#30363d] rounded-md overflow-hidden">
+            {MODE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setSelectedMode(opt.value)}
+                className={`px-3 py-1 text-[12px] font-medium transition-colors ${
+                  selectedMode === opt.value
+                    ? 'bg-[#58a6ff22] text-[#58a6ff]'
+                    : 'text-[#8b949e] hover:text-[#c9d1d9]'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         <span>
           <span className="text-[#8b949e] mr-1">Risk</span>
           {riskScore !== null ? (

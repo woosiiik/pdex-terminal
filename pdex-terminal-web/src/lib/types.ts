@@ -136,6 +136,20 @@ export interface DataFreshness {
   cachedAt?: string;
 }
 
+export interface StrategyTimeframe {
+  period: string;
+  tp: number;
+  sl: number;
+  outlook: string;
+  keyLevel: string;
+  tip: string;
+}
+
+export interface StrategyAdvice {
+  shortTerm: StrategyTimeframe;
+  midTerm: StrategyTimeframe;
+}
+
 export interface PositionAnalysisResponse {
   success: boolean;
   timestamp: string;
@@ -143,6 +157,7 @@ export interface PositionAnalysisResponse {
   dataFreshness: DataFreshness;
   ruleEngine: RuleEngineResults;
   aiInterpretation: AIInterpretation | null;
+  strategyAdvice: StrategyAdvice | null;
 }
 
 export interface FundingAnalysisResponse {
@@ -340,4 +355,25 @@ export interface HealthResponse {
     mysql: string;
     hyperliquid: string;
   };
+}
+
+// ============================================================
+// Discover (Coin Recommendation) Types
+// ============================================================
+
+export interface DiscoverRecommendation {
+  coin: string;
+  direction: 'LONG' | 'SHORT';
+  currentPrice: number;
+  changePercent24h: number;
+  tp: number;
+  sl: number;
+  confidence: 'high' | 'medium' | 'low';
+  reason: string;
+}
+
+export interface DiscoverResponse {
+  success: boolean;
+  timestamp: string;
+  recommendations: DiscoverRecommendation[];
 }

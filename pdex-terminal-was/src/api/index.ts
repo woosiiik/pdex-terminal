@@ -7,6 +7,7 @@ import {
   analyzeOIStandalone,
   analyzeLiquidationStandalone,
   analyzeOrder,
+  analyzeDiscover,
 } from "../orchestrator/index.js";
 import { getRedis } from "../data/cache.js";
 import { getPool } from "../data/db.js";
@@ -104,6 +105,22 @@ router.post(
 );
 
 // ============================================================
+// POST /api/v1/analysis/discover
+// ============================================================
+
+router.post(
+  "/analysis/discover",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const result = await analyzeDiscover();
+      res.json(result);
+    } catch (err) {
+      handleError(res, err);
+    }
+  },
+);
+
+// ============================================================
 // GET /api/v1/health
 // ============================================================
 
@@ -163,6 +180,15 @@ function handleError(res: Response, err: unknown): void {
     res.status(503).json({
       success: false,
       error: { code: "MARKET_DATA_UNAVAILABLE", message: "마켓 데이터를 조회할 수 없습니다" },
+    });
+    return;
+  }
+
+  if (message.includes("LLM") || message.includes("AI")) {
+    console.error("LLM error:", message);
+    res.status(503).json({
+      success: false,
+      error: { code: "LLM_UNAVAILABLE", message: "AI 분석을 수행할 수 없습니다" },
     });
     return;
   }

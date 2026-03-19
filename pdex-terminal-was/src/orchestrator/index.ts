@@ -7,7 +7,8 @@ import { calculateSupportResistance } from "../rule-engine/sr-calculator.js";
 import { analyzeFunding } from "../rule-engine/funding-analyzer.js";
 import { analyzeOI } from "../rule-engine/oi-analyzer.js";
 import { analyzeLiquidationClusters } from "../rule-engine/liquidation-analyzer.js";
-import { interpretPositionAnalysis, interpretFunding, interpretOI, interpretLiquidation, interpretOrderAnalysis } from "../ai-engine/index.js";
+import { interpretPositionAnalysis, interpretFunding, interpretOI, interpretLiquidation, interpretOrderAnalysis, generateStrategyAdvice, generateDiscoverRecommendations } from "../ai-engine/index.js";
+import { getMetaAndAssetCtxs, buildMarketSummary } from "../data/hyperliquid-client.js";
 import type {
   OpenPosition,
   OpenOrder,
@@ -19,6 +20,8 @@ import type {
   OrderAnalysisResponse,
   OrderAnalysisRuleEngineResults,
   RuleEngineResults,
+  DiscoverResponse,
+  MarketCoinSummary,
 } from "../types/index.js";
 
 // ============================================================
@@ -128,8 +131,23 @@ async function runPositionAnalysis(
     console.error("AI interpretation failed, returning rule engine results only");
   }
 
-  // 4. Fire-and-forget DB save
+  // 3.5 Strategy Advice (TP/SL + short/mid term strategy)
+  let strategyAdvice = null;
   const matchedPos = positions.find((p) => p.coin === symbol) ?? positions[0];
+  if (matchedPos) {
+    try {
+      strategyAdvice = await generateStrategyAdvice(
+        { coin: matchedPos.coin, side: matchedPos.side, entryPrice: matchedPos.entryPrice, leverage: matchedPos.leverage, size: matchedPos.size, marginUsed: matchedPos.marginUsed },
+        ruleEngine,
+        currentPrice,
+        symbol,
+      );
+    } catch {
+      console.error("Strategy advice generation failed");
+    }
+  }
+
+  // 4. Fire-and-forget DB save
   const analysisExtra: AnalysisExtra = {
     userAddress: extra?.userAddress,
     exchange: extra?.exchange ?? "hyperliquid",
@@ -151,6 +169,7 @@ async function runPositionAnalysis(
     dataFreshness: freshness,
     ruleEngine,
     aiInterpretation,
+    strategyAdvice,
   };
 }
 
@@ -345,4 +364,50 @@ function computeVolatility(candles: { high: number; low: number; close: number }
   // Simple ATR-like volatility as percentage
   const ranges = candles.map((c) => (c.high - c.low) / ((c.high + c.low) / 2));
   return ranges.reduce((s, r) => s + r, 0) / ranges.length;
+}
+
+// ============================================================
+// Discover Analysis (coin recommendation)
+// ============================================================
+
+export async function analyzeDiscover(): Promise<DiscoverResponse> {
+  return withTimeout(runDiscoverAnalysis(), config.analysisTimeout, "Discover analysis");
+}
+
+async function runDiscoverAnalysis(): Promise<DiscoverResponse> {
+  // 1. Fetch full market data
+  const [meta, assetCtxs] = await getMetaAndAssetCtxs();
+
+  // 2. Build market summary
+  const marketSummary = buildMarketSummary(meta, assetCtxs);
+
+  // 3. LLM recommendation
+  const recommendations = await generateDiscoverRecommendations(marketSummary);
+  if (!recommendations) {
+    throw new Error("LLM failed to generate discover recommendations");
+  }
+
+  // 4. Enrich with currentPrice and changePercent24h from market data
+  const enriched = enrichRecommendations(recommendations, marketSummary);
+
+  return {
+    success: true,
+    timestamp: new Date().toISOString(),
+    recommendations: enriched,
+  };
+}
+
+function enrichRecommendations(
+  recommendations: import("../types/index.js").DiscoverRecommendation[],
+  marketSummary: MarketCoinSummary[],
+): import("../types/index.js").DiscoverRecommendation[] {
+  const summaryMap = new Map(marketSummary.map((s) => [s.coin, s]));
+  return recommendations.map((rec) => {
+    const market = summaryMap.get(rec.coin);
+    return {
+      ...rec,
+      currentPrice: market?.markPx ?? rec.currentPrice ?? 0,
+      changePercent24h: market?.changePercent24h ?? rec.changePercent24h ?? 0,
+    };
+  });
 }
