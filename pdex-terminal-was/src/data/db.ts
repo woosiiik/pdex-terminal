@@ -39,6 +39,7 @@ export async function runMigrations(): Promise<void> {
         leverage INT DEFAULT NULL,
         entry_price DECIMAL(30,8) DEFAULT NULL,
         mark_price DECIMAL(30,8) DEFAULT NULL,
+        llm_model VARCHAR(100) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -51,6 +52,7 @@ export async function runMigrations(): Promise<void> {
       { name: 'leverage', def: 'INT DEFAULT NULL' },
       { name: 'entry_price', def: 'DECIMAL(30,8) DEFAULT NULL' },
       { name: 'mark_price', def: 'DECIMAL(30,8) DEFAULT NULL' },
+      { name: 'llm_model', def: 'VARCHAR(100) DEFAULT NULL' },
     ];
     for (const col of newCols) {
       const [rows] = await conn.query(
@@ -96,6 +98,15 @@ export async function runMigrations(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_oi_coin_time
       ON oi_history(coin, recorded_at DESC)
     `).catch(() => {});
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS discover_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        recommendations JSON NOT NULL,
+        llm_model VARCHAR(100) DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
   } finally {
     conn.release();
   }
@@ -112,6 +123,7 @@ export interface AnalysisExtra {
   leverage?: number;
   entryPrice?: number;
   markPrice?: number;
+  llmModel?: string;
 }
 
 export async function saveAnalysisResult(
@@ -124,8 +136,8 @@ export async function saveAnalysisResult(
   try {
     await getPool().execute(
       `INSERT INTO analysis_history
-       (symbol, analysis_type, rule_engine_result, ai_interpretation, user_address, exchange, side, leverage, entry_price, mark_price)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (symbol, analysis_type, rule_engine_result, ai_interpretation, user_address, exchange, side, leverage, entry_price, mark_price, llm_model)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         symbol,
         analysisType,
@@ -137,6 +149,7 @@ export async function saveAnalysisResult(
         extra?.leverage ?? null,
         extra?.entryPrice ?? null,
         extra?.markPrice ?? null,
+        extra?.llmModel ?? null,
       ],
     );
   } catch (err) {
@@ -199,5 +212,16 @@ export async function getOIHistory(coin: string, limit: number = 2): Promise<Arr
   } catch (err) {
     console.error("Failed to get OI history:", err);
     return [];
+  }
+}
+
+export async function saveDiscoverResult(recommendations: unknown, llmModel?: string): Promise<void> {
+  try {
+    await getPool().execute(
+      `INSERT INTO discover_history (recommendations, llm_model) VALUES (?, ?)`,
+      [JSON.stringify(recommendations), llmModel ?? null],
+    );
+  } catch (err) {
+    console.error("Failed to save discover result:", err);
   }
 }

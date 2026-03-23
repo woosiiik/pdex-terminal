@@ -1,6 +1,6 @@
 import { config } from "../config/index.js";
 import * as mds from "../data/market-data-service.js";
-import { saveAnalysisResult, saveFundingRate, saveOIData, getOIHistory } from "../data/db.js";
+import { saveAnalysisResult, saveFundingRate, saveOIData, getOIHistory, saveDiscoverResult } from "../data/db.js";
 import type { AnalysisExtra } from "../data/db.js";
 import { calculateRiskScore } from "../rule-engine/risk-calculator.js";
 import { calculateSupportResistance } from "../rule-engine/sr-calculator.js";
@@ -125,8 +125,10 @@ async function runPositionAnalysis(
 
   // 3. AI Engine interpretation (graceful degradation)
   let aiInterpretation = null;
+  let positionLlmModel: string | undefined;
   try {
-    aiInterpretation = await interpretPositionAnalysis(ruleEngine, symbol);
+    const aiRes = await interpretPositionAnalysis(ruleEngine, symbol);
+    if (aiRes) { aiInterpretation = aiRes.data; positionLlmModel = aiRes.llmModel; }
   } catch {
     console.error("AI interpretation failed, returning rule engine results only");
   }
@@ -136,12 +138,13 @@ async function runPositionAnalysis(
   const matchedPos = positions.find((p) => p.coin === symbol) ?? positions[0];
   if (matchedPos) {
     try {
-      strategyAdvice = await generateStrategyAdvice(
+      const advRes = await generateStrategyAdvice(
         { coin: matchedPos.coin, side: matchedPos.side, entryPrice: matchedPos.entryPrice, leverage: matchedPos.leverage, size: matchedPos.size, marginUsed: matchedPos.marginUsed },
         ruleEngine,
         currentPrice,
         symbol,
       );
+      if (advRes) strategyAdvice = advRes.data;
     } catch {
       console.error("Strategy advice generation failed");
     }
@@ -155,6 +158,7 @@ async function runPositionAnalysis(
     leverage: matchedPos?.leverage,
     entryPrice: matchedPos?.entryPrice,
     markPrice: currentPrice,
+    llmModel: positionLlmModel,
   };
   saveAnalysisResult(symbol, "position", ruleEngine, aiInterpretation ? JSON.stringify(aiInterpretation) : null, analysisExtra).catch((e) =>
     console.error("DB save failed:", e),
@@ -198,7 +202,8 @@ async function runFundingAnalysis(symbol: string): Promise<FundingAnalysisRespon
 
   let aiInterpretation = null;
   try {
-    aiInterpretation = await interpretFunding(result, symbol);
+    const aiRes = await interpretFunding(result, symbol);
+    if (aiRes) aiInterpretation = aiRes.data;
   } catch {
     console.error("AI funding interpretation failed");
   }
@@ -240,7 +245,8 @@ async function runOIAnalysis(symbol: string): Promise<OIAnalysisResponse> {
 
   let aiInterpretation = null;
   try {
-    aiInterpretation = await interpretOI(result, symbol);
+    const aiRes = await interpretOI(result, symbol);
+    if (aiRes) aiInterpretation = aiRes.data;
   } catch {
     console.error("AI OI interpretation failed");
   }
@@ -273,7 +279,8 @@ async function runLiquidationAnalysis(symbol: string): Promise<LiquidationAnalys
 
   let aiInterpretation = null;
   try {
-    aiInterpretation = await interpretLiquidation(result, symbol);
+    const aiRes = await interpretLiquidation(result, symbol);
+    if (aiRes) aiInterpretation = aiRes.data;
   } catch {
     console.error("AI liquidation interpretation failed");
   }
@@ -339,7 +346,8 @@ async function runOrderAnalysis(
 
   let aiInterpretation = null;
   try {
-    aiInterpretation = await interpretOrderAnalysis(ruleEngine, symbol);
+    const aiRes = await interpretOrderAnalysis(ruleEngine, symbol);
+    if (aiRes) aiInterpretation = aiRes.data;
   } catch {
     console.error("AI order interpretation failed");
   }
@@ -382,13 +390,16 @@ async function runDiscoverAnalysis(): Promise<DiscoverResponse> {
   const marketSummary = buildMarketSummary(meta, assetCtxs);
 
   // 3. LLM recommendation
-  const recommendations = await generateDiscoverRecommendations(marketSummary);
-  if (!recommendations) {
+  const recRes = await generateDiscoverRecommendations(marketSummary);
+  if (!recRes) {
     throw new Error("LLM failed to generate discover recommendations");
   }
 
   // 4. Enrich with currentPrice and changePercent24h from market data
-  const enriched = enrichRecommendations(recommendations, marketSummary);
+  const enriched = enrichRecommendations(recRes.data, marketSummary);
+
+  // 5. Fire-and-forget DB save
+  saveDiscoverResult(enriched, recRes.llmModel).catch(() => {});
 
   return {
     success: true,

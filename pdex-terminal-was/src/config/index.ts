@@ -23,22 +23,28 @@ export const config = {
     password: process.env.MYSQL_PASSWORD || "pdex1234",
   },
 
-  // Gemini
+  // Claude (primary)
+  claude: {
+    apiKey: process.env.ANTHROPIC_API_KEY || "",
+    model: process.env.ANTHROPIC_MODEL || "claude-opus-4-5-20251101",
+  },
+
+  // Groq (fallback 1)
+  groq: {
+    apiKey: process.env.GROQ_API_KEY || "",
+    model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+  },
+
+  // Gemini (fallback 2)
   gemini: {
     apiKey: process.env.GEMINI_API_KEY || "",
     model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
   },
 
-  // OpenAI (fallback)
+  // OpenAI (fallback 3)
   openai: {
     apiKey: process.env.OPENAI_API_KEY || "",
     model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-  },
-
-  // Groq (fallback 2)
-  groq: {
-    apiKey: process.env.GROQ_API_KEY || "",
-    model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
   },
 
   // Hyperliquid
