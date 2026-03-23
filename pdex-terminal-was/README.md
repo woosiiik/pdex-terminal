@@ -2,7 +2,7 @@
 
 Open Position / Open Order 분석을 위한 Node.js + TypeScript 백엔드 서비스.
 
-Hyperliquid 마켓 데이터 기반으로 Risk Score, Support/Resistance, Funding Rate, Open Interest, Liquidation Cluster, 주문 전략/체결/집중도/영향 분석을 수행하고, Gemini AI가 한국어로 해석해준다.
+Hyperliquid 마켓 데이터 기반으로 Risk Score, Support/Resistance, Funding Rate, Open Interest, Liquidation Cluster, 주문 전략/체결/집중도/영향 분석을 수행하고, Groq AI(Llama 3.3 70B)가 한국어로 해석해준다. 포지션 분석 시 단기/중기 전략 조언(TP/SL)도 제공한다.
 
 ## 목차
 
@@ -15,14 +15,17 @@ Hyperliquid 마켓 데이터 기반으로 Risk Score, Support/Resistance, Fundin
 
 - Node.js >= 20
 - Docker & Docker Compose
+- MySQL 8 (별도 설치, 127.0.0.1:3307)
 
 ## 로컬 실행
 
-### 1. 인프라 실행 (Redis + MySQL)
+### 1. 인프라 실행 (Redis)
 
 ```bash
 docker compose up -d
 ```
+
+> Docker Compose에는 Redis만 포함. MySQL은 별도 설치되어 있어야 한다.
 
 ### 2. 환경 변수 설정
 
@@ -30,7 +33,7 @@ docker compose up -d
 cp .env.example .env
 ```
 
-`.env` 파일에서 `GEMINI_API_KEY`를 설정한다. [Google AI Studio](https://aistudio.google.com)에서 발급 가능.
+`.env` 파일에서 `GROQ_API_KEY`를 설정한다. [Groq Console](https://console.groq.com)에서 발급 가능. Groq가 1순위 LLM이며, Gemini와 OpenAI는 폴백으로 사용된다.
 
 ### 3. 의존성 설치 및 서버 실행
 
@@ -51,11 +54,12 @@ curl http://localhost:4000/api/v1/health
 
 | Method | Path | 설명 |
 |--------|------|------|
-| POST | `/api/v1/analysis/position` | 포지션 종합 분석 |
+| POST | `/api/v1/analysis/position` | 포지션 종합 분석 (전략 조언 포함) |
 | POST | `/api/v1/analysis/order` | 오더 종합 분석 |
 | POST | `/api/v1/analysis/funding` | 펀딩 레이트 분석 |
 | POST | `/api/v1/analysis/oi` | Open Interest 분석 |
 | POST | `/api/v1/analysis/liquidation` | Liquidation Cluster 분석 |
+| POST | `/api/v1/analysis/discover` | 코인 디스커버 (AI 추천) |
 | GET | `/api/v1/health` | 서버 상태 확인 |
 
 상세 API 규격은 [docs/api-spec.md](docs/api-spec.md) 참고.

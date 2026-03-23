@@ -13,6 +13,7 @@
 6. [AI 역할 분리 아키텍처](#6-ai-역할-분리-아키텍처)
 7. [분석 이력 저장](#7-분석-이력-저장)
 8. [UI 툴팁](#8-ui-툴팁)
+9. [전략 조언 (Strategy Advice)](#9-전략-조언-strategy-advice)
 
 ---
 
@@ -247,9 +248,10 @@ Open Interest 변화와 가격 움직임의 관계를 분석하여 시장 참여
 AI 해석은 다음 순서로 LLM 프로바이더를 시도한다 (llm-client.ts):
 
 ```
-Gemini (gemini-2.0-flash) → Groq (llama-3.3-70b-versatile) → OpenAI (gpt-4o-mini)
+Groq (llama-3.3-70b-versatile) → Gemini (gemini-2.0-flash) → OpenAI (gpt-4o-mini)
 ```
 
+- Groq가 1순위 (무료, 빠름), Gemini와 OpenAI는 폴백
 - 각 프로바이더 실패 시 다음 프로바이더로 자동 폴백
 - 모든 프로바이더 실패 시 `aiInterpretation: null` 반환 (Rule Engine 결과만 표시)
 - Groq는 OpenAI 호환 API 사용 (`baseURL: https://api.groq.com/openai/v1`)
@@ -335,4 +337,52 @@ AI Copilot 패널의 각 분석 지표에 마우스 호버 시 한국어 설명 
 | 리스크 | S/R 지표 (5개) | Short-Term High/Low, VWAP, Pivot R1/S1 설명 |
 | 펀딩 | Trend (3개) + Z-Score + Mean Reversion | 각 시간대 추세, 표준편차, 평균 회귀 설명 |
 | OI | 시나리오 | OI+가격 조합 판단 기준 설명 |
-| 탭 헤더 | 각 탭 (5개) | 탭별 분석 내용 요약 (title 속성) |
+| 탭 헤더 | 각 탭 (6개) | 탭별 분석 내용 요약 (리스크, 펀딩, OI, 청산, 전략, 제안) |
+
+
+---
+
+## 9. 전략 조언 (Strategy Advice)
+
+### 9.1 개요
+
+포지션 분석 시 LLM을 활용하여 단기(1일~7일) / 중기(8일~21일) 전략 조언을 생성한다. TP/SL 라인 추천, 시장 전망, 핵심 가격 레벨, 운용 팁을 포함한다.
+
+### 9.2 UI 표시 ("전략" 탭)
+
+포지션 분석 결과의 6번째 탭 중 "전략" 탭에서 표시된다.
+
+| 항목 | 설명 |
+|------|------|
+| TP / SL 박스 | 단기/중기별 Take Profit, Stop Loss 가격 |
+| 전망 (Outlook) | 해당 기간의 시장 전망 요약 |
+| 핵심 레벨 (Key Level) | 주요 지지/저항 가격대 |
+| 운용 팁 (Tip) | 실전 운용 조언 |
+
+### 9.3 데이터 구조
+
+```typescript
+interface StrategyAdvice {
+  shortTerm: StrategyTimeframe;  // 단기 (1일~7일)
+  midTerm: StrategyTimeframe;    // 중기 (8일~21일)
+}
+
+interface StrategyTimeframe {
+  period: string;    // e.g. "1일~7일"
+  tp: number;        // Take Profit 가격
+  sl: number;        // Stop Loss 가격
+  outlook: string;   // 시장 전망
+  keyLevel: string;  // 핵심 가격 레벨
+  tip: string;       // 운용 팁
+}
+```
+
+### 9.4 LLM 프롬프트
+
+포지션 정보(코인, 방향, 진입가, 레버리지, 사이즈, 마진)와 Rule Engine 결과(S/R, 펀딩, OI)를 컨텍스트로 제공하여 LLM이 구조화된 JSON으로 전략 조언을 생성한다.
+
+### 9.5 인수 조건
+
+1. WHEN 포지션 분석이 완료되면, THE AI_Engine SHALL 포지션 정보와 Rule Engine 결과를 기반으로 전략 조언을 생성한다
+2. THE AI_Copilot SHALL "전략" 탭에서 단기/중기 TP/SL, 전망, 핵심 레벨, 운용 팁을 표시한다
+3. IF AI Engine 호출이 실패하면, THEN strategyAdvice는 null로 반환되고 "전략" 탭에 "AI 분석 실패" 메시지를 표시한다

@@ -9,18 +9,18 @@ services:
     volumes:
       - redis-data:/data
 
-  mysql:
-    image: mysql:8
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: root1234
-      MYSQL_DATABASE: pdex_terminal
-      MYSQL_USER: pdex
-      MYSQL_PASSWORD: pdex1234
-    volumes:
-      - mysql-data:/var/lib/mysql
+  # mysql:
+  #   image: mysql:8
+  #   ports:
+  #     - "3306:3306"
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: root1234
+  #     MYSQL_DATABASE: pdex_terminal
+  #     MYSQL_USER: pdex
+  #     MYSQL_PASSWORD: pdex1234
+  #   volumes:
+  #     - mysql-data:/var/lib/mysql
 
 volumes:
   redis-data:
-  mysql-data:
+  # mysql-data:

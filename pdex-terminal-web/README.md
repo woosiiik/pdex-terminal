@@ -41,11 +41,22 @@ npm run dev
 
 | 영역 | 설명 |
 |------|------|
-| TopBar | 지갑 주소 입력, 코인 선택, 포지션/오더 모드 전환, 타임프레임 선택 |
+| TopBar | 지갑 주소 입력, 코인 선택, 포지션/오더/디스커버 모드 전환, 타임프레임 선택 |
 | PortfolioPanel | 계좌 잔고, 보유 포지션, 미체결 주문 목록 |
 | MarketPanel | TradingView 스타일 캔들 차트 + 오더북 뎁스 차트 |
-| AICopilotPanel | Rule Engine + AI 기반 포지션/오더 분석 (리스크, 펀딩, OI, 청산, 전략, 체결, 집중도, 영향) |
+| AICopilotPanel | Rule Engine + AI 기반 포지션/오더 분석 |
+| DiscoverPanel | AI 기반 코인 추천 (방향, TP/SL, 신뢰도, 추천 사유) |
 | BottomBar | 알림 로그 (리사이즈 가능) |
+
+### 포지션 분석 탭 (6개)
+
+리스크, 펀딩, OI, 청산, 전략, 제안
+
+- 전략 탭: AI가 생성한 단기/중기 TP/SL 라인, 시장 전망, 핵심 레벨, 운용 팁
+
+### 오더 분석 탭 (6개)
+
+전략, 체결, 집중도, 영향, 제안, 변경 (변경은 Coming Soon)
 
 ## 기술 스택
 
@@ -61,7 +72,7 @@ npm run dev
 ```
 src/
 ├── app/           # Next.js App Router (layout, page)
-├── components/    # UI 컴포넌트 (TopBar, MarketPanel, AICopilotPanel 등)
+├── components/    # UI 컴포넌트 (TopBar, MarketPanel, AICopilotPanel, DiscoverPanel 등)
 ├── hooks/         # Custom hooks (useWebSocket)
 ├── lib/           # API 클라이언트 (hyperliquid-api, analysis-api, types)
 └── stores/        # Zustand 전역 상태
