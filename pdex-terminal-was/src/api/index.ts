@@ -15,6 +15,19 @@ import { getPool } from "../data/db.js";
 const router = Router();
 
 // ============================================================
+// Request logging middleware
+// ============================================================
+
+router.use((req: Request, res: Response, next) => {
+  const start = Date.now();
+  console.log(`→ ${req.method} ${req.originalUrl}`, req.method !== "GET" ? JSON.stringify(req.body).slice(0, 200) : "");
+  res.on("finish", () => {
+    console.log(`← ${req.method} ${req.originalUrl} ${res.statusCode} (${Date.now() - start}ms)`);
+  });
+  next();
+});
+
+// ============================================================
 // POST /api/v1/analysis/position
 // ============================================================
 
@@ -171,7 +184,7 @@ function handleError(res: Response, err: unknown): void {
   if (message.includes("timeout")) {
     res.status(504).json({
       success: false,
-      error: { code: "ANALYSIS_TIMEOUT", message: "분석 타임아웃 (10초 초과)" },
+      error: { code: "ANALYSIS_TIMEOUT", message: "분석 타임아웃 (30초 초과)" },
     });
     return;
   }

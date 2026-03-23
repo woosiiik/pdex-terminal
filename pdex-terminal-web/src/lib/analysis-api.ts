@@ -14,7 +14,7 @@ import type {
 const BASE_URL =
   process.env.NEXT_PUBLIC_WAS_URL ?? 'http://localhost:4000';
 
-const TIMEOUT_MS = 10_000;
+const TIMEOUT_MS = 30_000;
 
 // ── Helpers ──────────────────────────────────────────────
 

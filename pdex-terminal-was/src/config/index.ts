@@ -26,7 +26,7 @@ export const config = {
   // Claude (primary)
   claude: {
     apiKey: process.env.ANTHROPIC_API_KEY || "",
-    model: process.env.ANTHROPIC_MODEL || "claude-opus-4-5-20251101",
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
   },
 
   // Groq (fallback 1)
@@ -63,5 +63,5 @@ export const config = {
   },
 
   // Analysis timeout (ms)
-  analysisTimeout: 10_000,
+  analysisTimeout: 30_000,
 } as const;

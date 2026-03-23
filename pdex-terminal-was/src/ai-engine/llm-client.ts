@@ -42,7 +42,7 @@ function getGroq(): OpenAI {
 async function callClaude(system: string, user: string): Promise<string> {
   const result = await getClaude().messages.create({
     model: config.claude.model,
-    max_tokens: 1000,
+    max_tokens: 2048,
     temperature: 0.3,
     system,
     messages: [{ role: "user", content: user + "\n\nRespond with valid JSON only." }],
