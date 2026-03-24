@@ -3,7 +3,8 @@ WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 RUN npm ci
 COPY . .
-ENV NEXT_PUBLIC_WAS_URL=http://localhost:4000
+ARG NEXT_PUBLIC_WAS_URL=http://localhost:4000
+ENV NEXT_PUBLIC_WAS_URL=$NEXT_PUBLIC_WAS_URL
 RUN npm run build
 
 FROM node:20-alpine
