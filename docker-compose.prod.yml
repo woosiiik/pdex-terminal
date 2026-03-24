@@ -1,0 +1,78 @@
+version: "3.8"
+
+services:
+  # ── Infrastructure ──────────────────────────────
+  mysql:
+    image: mysql:8
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: pdex_terminal
+      MYSQL_USER: pdex_terminal
+      MYSQL_PASSWORD: pdex1234
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass redis1234
+    volumes:
+      - redis-data:/data
+
+  # ── Backend (WAS) ──────────────────────────────
+  was:
+    build:
+      context: ./pdex-terminal-was
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: "4000"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: redis1234
+      REDIS_DB: "0"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: pdex_terminal
+      MYSQL_USER: pdex_terminal
+      MYSQL_PASSWORD: pdex1234
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: claude-sonnet-4-20250514
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # ── Frontend (Web) ─────────────────────────────
+  web:
+    build:
+      context: ./pdex-terminal-web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_WAS_URL: http://158.179.168.88:4000
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - was
+
+volumes:
+  mysql-data:
+  redis-data:
