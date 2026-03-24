@@ -11,6 +11,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+# public 폴더가 있을 때만 복사 (빈 폴더는 git에 안 올라감)
+RUN mkdir -p ./public
+COPY --from=builder /app/public* ./public/
 EXPOSE 3000
 CMD ["node", "server.js"]
