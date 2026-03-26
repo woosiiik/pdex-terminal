@@ -20,8 +20,8 @@ const openPositionSchema = z.object({
   entryPrice: z.number().positive(),
   size: z.number().positive(),
   leverage: z.number().min(1),
-  liquidationPrice: z.number().positive(),
-  marginUsed: z.number().positive(),
+  liquidationPrice: z.number().min(0),
+  marginUsed: z.number().min(0),
 });
 
 export const positionAnalysisRequestSchema = z.object({

@@ -45,8 +45,18 @@ export default function AICopilotPanel() {
     return (
       <div className="flex flex-col h-full">
         <TabHeader tabs={POSITION_TABS} activeTab={positionTab} onTabChange={setPositionTab} />
-        <div className="flex-1 flex items-center justify-center text-xs text-[#484f58]">
-          코인을 선택하세요
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m16.5 16.5 3.5 3.5"/>
+            <path d="M11 8v3M11 14h.01"/>
+          </svg>
+          <div>
+            <p className="text-[13px] font-semibold text-white mb-1">코인을 선택하세요</p>
+            <p className="text-[11px] text-white/40 leading-relaxed">
+              좌측 포지션 또는 오더에서<br />코인을 선택하면 상세 분석을<br />확인할 수 있습니다
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -97,10 +107,30 @@ export default function AICopilotPanel() {
 
   const ruleEngine = positionAnalysis?.ruleEngine ?? null;
   const ai = positionAnalysis?.aiInterpretation ?? null;
+  const riskScore = ruleEngine?.riskScore?.totalScore ?? null;
 
   return (
     <div className="flex flex-col h-full">
       <TabHeader tabs={POSITION_TABS} activeTab={positionTab} onTabChange={setPositionTab} />
+      {riskScore !== null && (
+        <div
+          className="flex items-center justify-between px-3 py-2 shrink-0"
+          style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>리스크 스코어</span>
+          <span
+            className="px-2.5 py-0.5 rounded font-bold tabular-nums"
+            style={{
+              fontSize: 13,
+              background: riskScore >= 7 ? 'rgba(248,81,73,0.15)' : riskScore >= 4 ? 'rgba(210,153,34,0.15)' : 'rgba(63,185,80,0.15)',
+              color: riskScore >= 7 ? '#f85149' : riskScore >= 4 ? '#d29922' : '#3fb950',
+              border: `1px solid ${riskScore >= 7 ? 'rgba(248,81,73,0.3)' : riskScore >= 4 ? 'rgba(210,153,34,0.3)' : 'rgba(63,185,80,0.3)'}`,
+            }}
+          >
+            {riskScore}/10
+          </span>
+        </div>
+      )}
       <div className="flex-1 p-3 overflow-y-auto">
         {positionTab === 'risk' && <RiskTab ruleEngine={ruleEngine} ai={ai} />}
         {positionTab === 'funding' && <FundingTab ruleEngine={ruleEngine} ai={ai} />}
@@ -118,7 +148,7 @@ export default function AICopilotPanel() {
 function TabHeader<T extends string>({ tabs, activeTab, onTabChange }: { tabs: { id: T; label: string; tooltip?: string }[]; activeTab: T; onTabChange: (t: T) => void }) {
   const compact = tabs.length > 5;
   return (
-    <div className="flex bg-[#161b22] border-b border-[#30363d] shrink-0">
+    <div className="flex shrink-0" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -127,8 +157,8 @@ function TabHeader<T extends string>({ tabs, activeTab, onTabChange }: { tabs: {
           title={tab.tooltip}
           className={`${compact ? 'px-2' : 'px-4'} py-2.5 text-xs cursor-pointer border-b-2 transition-colors whitespace-nowrap ${
             activeTab === tab.id
-              ? 'text-[#58a6ff] border-[#58a6ff]'
-              : 'text-[#8b949e] border-transparent hover:text-[#c9d1d9]'
+              ? 'text-white border-[#A78BFA]'
+              : 'text-white/40 border-transparent hover:text-white'
           }`}
         >
           {tab.label}

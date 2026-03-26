@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import TopBar from '@/components/TopBar';
 import PortfolioPanel from '@/components/PortfolioPanel';
@@ -41,27 +41,46 @@ function EmptyState() {
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-8">
+    <div className="flex-1 flex flex-col items-center justify-center gap-8" style={{ position: 'relative', zIndex: 1 }}>
+
       {/* Hero Icon */}
-      <div className="select-none">
+      <div className="relative z-10 select-none">
         <Image src="/icon.svg" alt="Calico Terminal" width={96} height={96} className="rounded-2xl opacity-90" />
       </div>
 
       {/* Title */}
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-[#c9d1d9] mb-2">
-          Calico Terminal에 오신 것을 환영합니다
+      <div className="relative z-10 text-center">
+        <h1
+          className="text-2xl font-bold mb-2"
+          style={{
+            fontFamily: "'Syne', sans-serif",
+            fontWeight: 800,
+            background: 'linear-gradient(90deg, #a855f7 0%, #ec4899 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
+          지갑 주소 하나로 시작하세요
         </h1>
-        <p className="text-sm text-[#8b949e] leading-relaxed">
-          Hyperliquid 포지션을 실시간으로 모니터링하고
-          <br />
-          AI 기반 리스크 분석을 받아보세요
+        <p className="text-sm text-[#a89fd4] leading-relaxed">
+          Hyperliquid 실시간 포지션 모니터링과 AI 리스크 분석을 한 곳에서
         </p>
       </div>
 
       {/* Large Address Input */}
-      <div className="flex items-center gap-3">
-        <div className="relative">
+      <div className="relative z-10">
+        <div
+          className="wallet-input-wrap flex items-center bg-transparent rounded-[20px] px-6 py-4 w-[520px]"
+          style={{ border: '1.5px solid #6C63FF', boxShadow: '0 4px 24px rgba(108, 99, 255, 0.12)' }}
+        >
+          {/* Search Icon — slide in from left */}
+          <div className="search-icon-animate shrink-0 mr-4 cursor-pointer" onClick={handleConnect}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="11" r="7" stroke="#a78bfa" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="m16.5 16.5 3.5 3.5" stroke="#a78bfa" strokeWidth="2.4" strokeLinecap="round"/>
+            </svg>
+          </div>
           <input
             type="text"
             value={inputValue}
@@ -71,39 +90,71 @@ function EmptyState() {
             }}
             onKeyDown={handleKeyDown}
             placeholder="0x로 시작하는 지갑 주소를 입력하세요"
-            className={`bg-[#161b22] border text-[#c9d1d9] px-5 py-3.5 rounded-[10px] w-[480px] text-[15px] outline-none placeholder:text-[#484f58] transition-colors focus:border-[#58a6ff] ${
-              validationError ? 'border-[#f85149]' : 'border-[#30363d]'
-            }`}
+            className="flex-1 bg-transparent text-white text-[15px] outline-none placeholder:text-white/70"
           />
-          {validationError && (
-            <div className="absolute top-full left-0 mt-1 text-[11px] text-[#f85149]">
-              {validationError}
-            </div>
-          )}
+          {/* Clear button */}
+          <button
+            type="button"
+            onClick={() => { setInputValue(''); setValidationError(null); }}
+            className={`wallet-clear-btn shrink-0 ml-3 text-white/60 hover:text-white/90 bg-transparent border-none cursor-pointer p-0.5 rounded-full transition-colors${inputValue ? ' visible' : ''}`}
+            tabIndex={-1}
+            aria-label="입력 초기화"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.15)"/>
+              <path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleConnect}
-          className="bg-[#238636] text-white border-none px-7 py-3.5 rounded-[10px] cursor-pointer text-[15px] font-semibold hover:bg-[#2ea043] transition-colors"
-        >
-          연결하기
-        </button>
+        {validationError && (
+          <div className="absolute top-full left-0 mt-2 text-[11px] text-[#f87171]">
+            {validationError}
+          </div>
+        )}
       </div>
 
       {/* Feature Cards */}
-      <div className="flex gap-5 mt-4">
-        <FeatureCard icon="📊" title="실시간 포트폴리오" desc="포지션, 오더, 자산 현황을 실시간으로 확인" />
-        <FeatureCard icon="📈" title="마켓 데이터" desc="차트, 오더북, 펀딩 레이트를 한 화면에서 확인" />
-        <FeatureCard icon="🤖" title="AI 분석" desc="리스크, 펀딩, OI를 AI가 자동 분석" />
+      <div className="relative z-10 flex gap-5 mt-4">
+        <FeatureCard
+          icon={
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+            </svg>
+          }
+          title="실시간 포트폴리오"
+          desc="포지션, 오더, 자산 현황을 실시간으로 확인"
+        />
+        <FeatureCard
+          icon={
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              <polyline points="17 6 23 6 23 12"/>
+            </svg>
+          }
+          title="마켓 데이터"
+          desc="차트, 오더북, 펀딩 레이트를 한 화면에서 확인"
+        />
+        <FeatureCard
+          icon={
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="10" rx="2"/>
+              <circle cx="12" cy="5" r="2"/><path d="M12 7v4"/>
+              <circle cx="8" cy="16" r="1" fill="#a78bfa"/><circle cx="16" cy="16" r="1" fill="#a78bfa"/>
+            </svg>
+          }
+          title="AI 분석"
+          desc="리스크, 펀딩, OI를 AI가 자동 분석"
+        />
       </div>
 
       {/* Sample Address Hint */}
-      <div className="mt-2 text-xs text-[#484f58]">
+      <div className="relative z-10 mt-2 text-xs text-[#6d6494]">
         테스트 주소:{' '}
         <button
           type="button"
           onClick={() => setInputValue('0x1234567890abcdef1234567890abcdef12345678')}
-          className="text-[#58a6ff] underline cursor-pointer bg-transparent border-none text-xs"
+          className="text-[#a78bfa] font-semibold underline cursor-pointer bg-transparent border-none text-xs"
         >
           0x1234...5678
         </button>{' '}
@@ -113,12 +164,20 @@ function EmptyState() {
   );
 }
 
-function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc: string }) {
+function FeatureCard({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
-    <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 w-[200px] text-center">
+    <div
+      className="feature-card rounded-2xl p-5 w-[220px] text-center border border-white/10"
+      style={{
+        background: 'rgba(20, 14, 50, 0.55)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
+      }}
+    >
       <div className="text-[28px] mb-2.5">{icon}</div>
-      <div className="text-[13px] font-semibold mb-1.5">{title}</div>
-      <div className="text-[11px] text-[#8b949e] leading-relaxed">{desc}</div>
+      <div className="text-[13px] font-semibold text-white mb-1.5">{title}</div>
+      <div className="text-[11px] text-[#a89fd4] leading-relaxed break-keep">{desc}</div>
     </div>
   );
 }
@@ -307,13 +366,13 @@ function ConnectedLayout() {
 
   return (
     <div className="flex flex-1 overflow-hidden">
-      <div className="w-[280px] shrink-0 border-r border-[#30363d] overflow-y-auto">
+      <div className="w-[280px] shrink-0 overflow-y-auto portfolio-scroll" style={{ borderRight: '1px solid rgba(255,255,255,0.07)', position: 'relative', zIndex: 1 }}>
         <PortfolioPanel />
       </div>
-      <div className="flex-1 min-w-0 overflow-hidden">
+      <div className="flex-1 min-w-0 overflow-hidden flex flex-col" style={{ position: 'relative', zIndex: 1 }}>
         <MarketPanel />
       </div>
-      <div className="w-[320px] shrink-0 border-l border-[#30363d] overflow-y-auto">
+      <div className="w-[320px] shrink-0 overflow-y-auto" style={{ borderLeft: '1px solid rgba(255,255,255,0.07)', position: 'relative', zIndex: 1 }}>
         {selectedMode === 'discover' ? <DiscoverPanel /> : <AICopilotPanel />}
       </div>
     </div>
@@ -324,7 +383,7 @@ export default function Home() {
   const isConnected = useStore((s) => s.isConnected);
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen" style={{ position: 'relative', zIndex: 1 }}>
       <TopBar />
 
       {isConnected ? <ConnectedLayout /> : <EmptyState />}

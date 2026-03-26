@@ -1,7 +1,9 @@
 @import "tailwindcss";
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
 
 @theme {
-  --color-bg-main: #0d1117;
+  --color-bg-main: #080818;
   --color-bg-panel: #161b22;
   --color-border: #30363d;
   --color-text-primary: #c9d1d9;
@@ -11,7 +13,7 @@
   --color-profit: #3fb950;
   --color-loss: #f85149;
   --color-warning: #d29922;
-  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
 body {
@@ -22,11 +24,105 @@ body {
   overflow: hidden;
 }
 
-/* Hide scrollbar globally */
+/* Dark navy background glow orbs */
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%       { opacity: 0.75; transform: scale(1.08); }
+}
+
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  animation: pulseGlow 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Wallet input search icon slide-in animation */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.search-icon-animate {
+  animation: slideInLeft 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.wallet-input-wrap {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.wallet-input-wrap:focus-within {
+  transform: scale(1.02);
+  box-shadow:
+    0 0 0 2.5px rgba(167, 139, 250, 0.7),
+    0 0 24px rgba(139, 92, 246, 0.5),
+    0 0 48px rgba(108, 92, 231, 0.3),
+    0 16px 48px rgba(108, 92, 231, 0.35) !important;
+}
+
+/* Feature card hover */
+.feature-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-7px);
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(139, 92, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.wallet-clear-btn {
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.wallet-clear-btn.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+/* Hide scrollbar globally (except portfolio panel) */
 ::-webkit-scrollbar {
   display: none;
 }
 
 * {
   scrollbar-width: none;
+}
+
+/* Portfolio panel — thin scrollbar */
+.portfolio-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.portfolio-scroll::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+}
+
+.portfolio-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.portfolio-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+
+.portfolio-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.2);
 }

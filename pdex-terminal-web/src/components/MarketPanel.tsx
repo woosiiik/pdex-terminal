@@ -42,8 +42,16 @@ export default function MarketPanel() {
 
   if (!selectedCoin) {
     return (
-      <div className="flex-1 flex items-center justify-center text-[#484f58] text-sm select-none">
-        코인을 선택하세요
+      <div className="h-full w-full flex items-center justify-center select-none">
+        <div className="flex flex-col items-center text-center" style={{ gap: 12 }}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)' }}>코인을 선택하세요</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', lineHeight: 1.6 }}>
+            포지션 또는 오더에서 코인을 선택하면<br />상세 차트를 확인할 수 있습니다
+          </span>
+        </div>
       </div>
     );
   }
@@ -82,7 +90,7 @@ function MarketHeader({ coin }: { coin: string }) {
   }
 
   return (
-    <div className="flex items-center gap-5 px-4 py-2.5 bg-[#161b22] border-b border-[#30363d] shrink-0 overflow-x-auto">
+    <div className="flex items-center gap-5 px-4 py-2.5 shrink-0 overflow-x-auto" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
       {/* Coin name */}
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-[15px] font-bold text-[#c9d1d9]">
@@ -129,8 +137,8 @@ function MarketHeader({ coin }: { coin: string }) {
 function HeaderStat({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="flex flex-col shrink-0">
-      <span className="text-[10px] text-[#484f58] leading-none mb-0.5">{label}</span>
-      <span className={`text-[12px] font-medium ${valueClass ?? 'text-[#c9d1d9]'}`}>{value}</span>
+      <span className="text-[10px] leading-none mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{label}</span>
+      <span className={`text-[12px] font-medium ${valueClass ?? 'text-white'}`}>{value}</span>
     </div>
   );
 }
@@ -156,7 +164,7 @@ function FundingCountdown() {
 
   return (
     <div className="flex flex-col shrink-0">
-      <span className="text-[10px] text-[#484f58] leading-none mb-0.5">Countdown</span>
+      <span className="text-[10px] leading-none mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>Countdown</span>
       <span className="text-[12px] font-medium text-[#d29922] font-mono">{countdown}</span>
     </div>
   );
@@ -169,7 +177,7 @@ function TimeframeBar() {
   const setTimeframe = useStore((s) => s.setTimeframe);
 
   return (
-    <div className="flex items-center gap-1 px-4 py-1.5 bg-[#0d1117] border-b border-[#30363d] shrink-0">
+    <div className="flex items-center gap-1 px-4 py-1.5 shrink-0" style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
       {TIMEFRAMES.map((tf) => (
         <button
           key={tf}
@@ -177,8 +185,8 @@ function TimeframeBar() {
           onClick={() => setTimeframe(tf)}
           className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
             tf === timeframe
-              ? 'bg-[#58a6ff]/15 text-[#58a6ff]'
-              : 'text-[#8b949e] hover:text-[#c9d1d9] hover:bg-[#161b22]'
+              ? 'bg-[#A78BFA]/15 text-[#A78BFA]'
+              : 'text-white/40 hover:text-white hover:bg-white/5'
           }`}
         >
           {tf}
@@ -204,12 +212,12 @@ function CandlestickChart() {
 
     const chart = createChart(container, {
       layout: {
-        background: { type: ColorType.Solid, color: '#0d1117' },
-        textColor: '#8b949e',
+        background: { type: ColorType.Solid, color: '#080818' },
+        textColor: 'rgba(255,255,255,0.4)',
       },
       grid: {
-        vertLines: { color: '#1c2128' },
-        horzLines: { color: '#1c2128' },
+        vertLines: { color: 'rgba(255,255,255,0.04)' },
+        horzLines: { color: 'rgba(255,255,255,0.04)' },
       },
       crosshair: {
         vertLine: { color: '#58a6ff', width: 1, labelBackgroundColor: '#58a6ff' },
@@ -337,7 +345,7 @@ function Orderbook() {
   return (
     <div className="flex flex-col h-full text-[11px] select-none">
       {/* Header */}
-      <div className="flex justify-between px-2 py-1.5 text-[10px] text-[#484f58] border-b border-[#30363d] shrink-0">
+      <div className="flex justify-between px-2 py-1.5 text-[10px] shrink-0" style={{ color: 'rgba(255,255,255,0.35)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <span>Price</span>
         <span>Size</span>
         <span>Total</span>
@@ -356,7 +364,7 @@ function Orderbook() {
       </div>
 
       {/* Spread */}
-      <div className="flex justify-center items-center py-1.5 border-y border-[#30363d] bg-[#161b22] shrink-0">
+      <div className="flex justify-center items-center py-1.5 shrink-0" style={{ background: 'rgba(255,255,255,0.03)', borderTop: '1px solid rgba(255,255,255,0.07)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <span className="text-[#8b949e] text-[11px]">
           Spread: {formatNumber(orderbook.spread)} ({orderbook.spreadPercent.toFixed(3)}%)
         </span>

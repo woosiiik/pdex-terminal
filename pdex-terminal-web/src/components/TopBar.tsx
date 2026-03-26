@@ -32,7 +32,6 @@ export default function TopBar() {
     setConnected,
     setError,
     error,
-    positionAnalysis,
     disconnect,
     selectedMode,
     setSelectedMode,
@@ -54,8 +53,6 @@ export default function TopBar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const riskScore = positionAnalysis?.ruleEngine?.riskScore?.totalScore ?? null;
 
   function handleConnect() {
     const trimmed = inputValue.trim();
@@ -91,153 +88,107 @@ export default function TopBar() {
   }
 
   return (
-    <header className="flex items-center justify-between bg-[#161b22] border-b border-[#30363d] px-5 h-14 shrink-0">
+    <header className="flex items-center justify-between px-5 h-14 shrink-0 relative z-20" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
       {/* Logo */}
       <div className="flex items-center gap-2 select-none whitespace-nowrap">
         <Image src="/icon.svg" alt="Calico" width={28} height={28} className="rounded-md" />
-        <span className="text-base font-bold text-[#58a6ff]">Calico Terminal</span>
+        <span className="text-base font-bold text-white">Calico Terminal</span>
       </div>
 
-      {/* Center: Exchange selector + Wallet input */}
-      <div className="flex items-center gap-2">
-        {/* Exchange Selector */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-1.5 bg-[#161b22] border border-[#30363d] px-3 py-1.5 rounded-md cursor-pointer select-none"
-          >
-            <span
-              className="w-2 h-2 rounded-full inline-block"
-              style={{ background: selectedExchange.color }}
-            />
-            <span className="text-[#c9d1d9] text-[13px] font-semibold">
-              {selectedExchange.name}
-            </span>
-            <span className="text-[#484f58] text-[10px] ml-0.5">▾</span>
-          </button>
+      {/* Center: Exchange selector + Wallet address (연결된 상태에서만 표시) */}
+      {isConnected && (
+        <div className="flex items-center gap-3">
+          {/* Exchange Selector */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-[20px] cursor-pointer select-none transition-colors"
+              style={{ background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)' }}
+            >
+              <span
+                className="w-2 h-2 rounded-full inline-block"
+                style={{ background: selectedExchange.color }}
+              />
+              <span className="text-[13px] font-semibold" style={{ color: '#A78BFA' }}>
+                {selectedExchange.name}
+              </span>
+              <span className="text-[10px] ml-0.5" style={{ color: '#A78BFA' }}>▾</span>
+            </button>
 
-          {dropdownOpen && (
-            <div className="absolute top-full left-0 mt-1 bg-[#161b22] border border-[#30363d] rounded-lg overflow-hidden z-50 min-w-[160px] shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-              {EXCHANGES.map((ex) => (
-                <button
-                  key={ex.name}
-                  type="button"
-                  onClick={() => handleExchangeSelect(ex)}
-                  className={`flex items-center gap-2 w-full px-3.5 py-2.5 text-[13px] text-left transition-colors ${
-                    ex.name === selectedExchange.name
-                      ? 'bg-[#58a6ff15]'
-                      : 'hover:bg-[#58a6ff22]'
-                  } ${!ex.enabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-                  disabled={!ex.enabled}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full inline-block"
-                    style={{ background: ex.color }}
-                  />
-                  <span className="text-[#c9d1d9]">{ex.name}</span>
-                  {!ex.enabled && (
-                    <span className="text-[10px] text-[#484f58] ml-auto">Soon</span>
-                  )}
-                </button>
-              ))}
+            {dropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 rounded-lg overflow-hidden z-50 min-w-[160px] shadow-[0_8px_24px_rgba(0,0,0,0.5)]" style={{ background: 'rgba(15,12,30,0.9)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                {EXCHANGES.map((ex) => (
+                  <button
+                    key={ex.name}
+                    type="button"
+                    onClick={() => handleExchangeSelect(ex)}
+                    className={`flex items-center gap-2 w-full px-3.5 py-2.5 text-[13px] text-left transition-colors ${
+                      ex.name === selectedExchange.name
+                        ? 'bg-[#a78bfa15]'
+                        : 'hover:bg-[#a78bfa11]'
+                    } ${!ex.enabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                    disabled={!ex.enabled}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full inline-block"
+                      style={{ background: ex.color }}
+                    />
+                    <span className="text-[#c9d1d9]">{ex.name}</span>
+                    {!ex.enabled && (
+                      <span className="text-[10px] text-[#484f58] ml-auto">Soon</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Connected Address + 해제 */}
+          {walletAddress && (
+            <div className="flex items-center gap-2">
+              <div
+                className="text-[13px] font-mono px-3 py-1 rounded-lg"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}
+              >
+                {abbreviateAddress(walletAddress)}
+              </div>
+              <button
+                type="button"
+                onClick={handleDisconnect}
+                className="text-[13px] px-3 py-1 rounded-lg cursor-pointer transition-colors bg-transparent"
+                style={{ border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; e.currentTarget.style.color = 'rgba(255,255,255,0.9)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+              >
+                해제
+              </button>
             </div>
           )}
         </div>
+      )}
 
-        {/* Wallet Input / Connected Address */}
-        {isConnected && walletAddress ? (
-          <div className="flex items-center gap-2">
-            <div className="bg-[#0d1117] border border-[#30363d] text-[#c9d1d9] px-3 py-1.5 rounded-md text-[13px] font-mono">
-              {abbreviateAddress(walletAddress)}
-            </div>
+      {/* Right: Mode Toggle (연결된 상태에서만 표시) */}
+      {isConnected && (
+        <div className="flex items-center gap-5 text-[13px]">
+          {MODE_OPTIONS.map((opt) => (
             <button
+              key={opt.value}
               type="button"
-              onClick={handleDisconnect}
-              className="bg-[#30363d] text-[#c9d1d9] border-none px-3 py-1.5 rounded-md cursor-pointer text-[13px] hover:bg-[#484f58] transition-colors"
+              onClick={() => setSelectedMode(opt.value)}
+              className="text-[13px] bg-transparent border-none cursor-pointer transition-colors p-0"
+              style={{
+                color: selectedMode === opt.value ? '#ffffff' : 'rgba(255,255,255,0.45)',
+                fontWeight: selectedMode === opt.value ? 700 : 400,
+              }}
+              onMouseEnter={e => { if (selectedMode !== opt.value) e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
+              onMouseLeave={e => { if (selectedMode !== opt.value) e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}
             >
-              해제
+              {opt.label}
             </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => {
-                  setInputValue(e.target.value);
-                  if (validationError) setValidationError(null);
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder="지갑 주소 입력 (0x...)"
-                className={`bg-[#0d1117] border text-[#c9d1d9] px-3 py-1.5 rounded-md w-[340px] text-[13px] outline-none placeholder:text-[#484f58] transition-colors focus:border-[#58a6ff] ${
-                  validationError ? 'border-[#f85149]' : 'border-[#30363d]'
-                }`}
-              />
-              {validationError && (
-                <div className="absolute top-full left-0 mt-1 text-[11px] text-[#f85149] whitespace-nowrap">
-                  {validationError}
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={handleConnect}
-              className={`bg-[#238636] text-white border-none px-4 py-1.5 rounded-md text-[13px] transition-colors ${
-                inputValue.trim()
-                  ? 'cursor-pointer hover:bg-[#2ea043]'
-                  : 'opacity-50 cursor-not-allowed'
-              }`}
-              disabled={!inputValue.trim()}
-            >
-              연결
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Right: Mode Toggle + Risk Score */}
-      <div className="flex items-center gap-6 text-[13px]">
-        {/* Mode Toggle */}
-        {isConnected && (
-          <div className="flex items-center bg-[#0d1117] border border-[#30363d] rounded-md overflow-hidden">
-            {MODE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setSelectedMode(opt.value)}
-                className={`px-3 py-1 text-[12px] font-medium transition-colors ${
-                  selectedMode === opt.value
-                    ? 'bg-[#58a6ff22] text-[#58a6ff]'
-                    : 'text-[#8b949e] hover:text-[#c9d1d9]'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <span>
-          <span className="text-[#8b949e] mr-1">Risk</span>
-          {riskScore !== null ? (
-            <span
-              className={`px-2 py-0.5 rounded text-[13px] font-semibold ${
-                riskScore >= 7
-                  ? 'bg-[#f8514922] text-[#f85149]'
-                  : riskScore >= 4
-                    ? 'bg-[#d2992222] text-[#d29922]'
-                    : 'bg-[#3fb95022] text-[#3fb950]'
-              }`}
-            >
-              {riskScore}/10
-            </span>
-          ) : (
-            <span className="text-[#484f58]">--</span>
-          )}
-        </span>
-      </div>
+          ))}
+        </div>
+      )}
     </header>
   );
 }
