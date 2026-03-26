@@ -88,14 +88,15 @@ export default function TopBar() {
   }
 
   return (
-    <header className="flex items-center justify-between px-5 h-14 shrink-0 relative z-20" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-      {/* Logo */}
+    <header className="grid grid-cols-3 items-center px-5 h-14 shrink-0 relative z-20" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+      {/* Left: Logo */}
       <div className="flex items-center gap-2 select-none whitespace-nowrap">
         <Image src="/icon.svg" alt="Calico" width={28} height={28} className="rounded-md" />
         <span className="text-base font-bold text-white">Calico Terminal</span>
       </div>
 
       {/* Center: Exchange selector + Wallet address (연결된 상태에서만 표시) */}
+      <div className="flex justify-center">
       {isConnected && (
         <div className="flex items-center gap-3">
           {/* Exchange Selector */}
@@ -167,24 +168,10 @@ export default function TopBar() {
           )}
         </div>
       )}
+      </div>
 
-      {/* Right: Mode indicator (read-only, 연결된 상태에서만 표시) */}
-      {isConnected && selectedMode && (
-        <div className="flex items-center gap-5 text-[13px]">
-          {MODE_OPTIONS.map((opt) => (
-            <span
-              key={opt.value}
-              className="text-[13px]"
-              style={{
-                color: selectedMode === opt.value ? '#ffffff' : 'rgba(255,255,255,0.25)',
-                fontWeight: selectedMode === opt.value ? 700 : 400,
-              }}
-            >
-              {opt.label}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Right: placeholder for grid balance */}
+      <div className="flex justify-end" />
     </header>
   );
 }

@@ -32,6 +32,42 @@ const ORDER_TABS: { id: OrderTabId; label: string; tooltip: string }[] = [
   { id: 'order-change', label: '변경', tooltip: '주문 수정/취소/재배치 이벤트 기반 전략 변경 탐지 (준비 중)' },
 ];
 
+function ContextHeader({ coin, mode, side }: { coin: string | null; mode: string | null; side?: string | null }) {
+  const modeLabel = mode === 'position' ? '오픈 포지션' : mode === 'order' ? '오픈 오더' : null;
+  const isLong = side === 'long' || side === 'buy';
+  const badge = side
+    ? {
+        label: side === 'long' ? 'LONG' : side === 'short' ? 'SHORT' : side === 'buy' ? '매수' : '매도',
+        bg: isLong ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
+        border: isLong ? '1px solid rgba(52,211,153,0.3)' : '1px solid rgba(248,113,113,0.3)',
+        color: isLong ? '#34D399' : '#F87171',
+      }
+    : null;
+
+  return (
+    <div
+      className="flex items-center justify-between px-3 py-2.5 shrink-0"
+      style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+    >
+      {coin ? (
+        <div className="flex items-center gap-2">
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>{coin}</span>
+          {badge && (
+            <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4, background: badge.bg, border: badge.border, color: badge.color }}>
+              {badge.label}
+            </span>
+          )}
+        </div>
+      ) : (
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>선택된 항목 없음</span>
+      )}
+      {modeLabel && (
+        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{modeLabel}</span>
+      )}
+    </div>
+  );
+}
+
 export default function AICopilotPanel() {
   const [positionTab, setPositionTab] = useState<PositionTabId>('risk');
   const [orderTab, setOrderTab] = useState<OrderTabId>('order-strategy');
@@ -40,10 +76,17 @@ export default function AICopilotPanel() {
   const analysisLoading = useStore((s) => s.analysisLoading);
   const selectedCoin = useStore((s) => s.selectedCoin);
   const selectedMode = useStore((s) => s.selectedMode);
+  const positions = useStore((s) => s.positions);
+  const orders = useStore((s) => s.orders);
+
+  const positionSide = positions.find((p) => p.coin === selectedCoin)?.side ?? null;
+  const orderSide = orders.find((o) => o.coin === selectedCoin)?.side ?? null;
+  const contextSide = selectedMode === 'position' ? positionSide : selectedMode === 'order' ? orderSide : null;
 
   if (!selectedCoin) {
     return (
       <div className="flex flex-col h-full">
+        <ContextHeader coin={null} mode={null} side={null} />
         <TabHeader tabs={POSITION_TABS} activeTab={positionTab} onTabChange={setPositionTab} />
         <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -67,6 +110,7 @@ export default function AICopilotPanel() {
     if (analysisLoading) {
       return (
         <div className="flex flex-col h-full">
+          <ContextHeader coin={selectedCoin} mode={selectedMode} side={contextSide} />
           <TabHeader tabs={ORDER_TABS} activeTab={orderTab} onTabChange={setOrderTab} />
           <div className="flex-1 p-3 space-y-3">
             <LoadingSkeleton />
@@ -80,6 +124,7 @@ export default function AICopilotPanel() {
 
     return (
       <div className="flex flex-col h-full">
+        <ContextHeader coin={selectedCoin} mode={selectedMode} side={contextSide} />
         <TabHeader tabs={ORDER_TABS} activeTab={orderTab} onTabChange={setOrderTab} />
         <div className="flex-1 p-3 overflow-y-auto">
           {orderTab === 'order-strategy' && <OrderStrategyTab ruleEngine={orderRE} ai={orderAI} />}
@@ -97,6 +142,7 @@ export default function AICopilotPanel() {
   if (analysisLoading) {
     return (
       <div className="flex flex-col h-full">
+        <ContextHeader coin={selectedCoin} mode={selectedMode} side={contextSide} />
         <TabHeader tabs={POSITION_TABS} activeTab={positionTab} onTabChange={setPositionTab} />
         <div className="flex-1 p-3 space-y-3">
           <LoadingSkeleton />
@@ -111,6 +157,7 @@ export default function AICopilotPanel() {
 
   return (
     <div className="flex flex-col h-full">
+      <ContextHeader coin={selectedCoin} mode={selectedMode} side={contextSide} />
       <TabHeader tabs={POSITION_TABS} activeTab={positionTab} onTabChange={setPositionTab} />
       {riskScore !== null && (
         <div
@@ -155,11 +202,12 @@ function TabHeader<T extends string>({ tabs, activeTab, onTabChange }: { tabs: {
           type="button"
           onClick={() => onTabChange(tab.id)}
           title={tab.tooltip}
-          className={`${compact ? 'px-2' : 'px-4'} py-2.5 text-xs cursor-pointer border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === tab.id
-              ? 'text-white border-[#A78BFA]'
-              : 'text-white/40 border-transparent hover:text-white'
-          }`}
+          className={`${compact ? 'px-2' : 'px-4'} py-2.5 text-xs cursor-pointer border-b-2 transition-colors whitespace-nowrap bg-transparent`}
+          style={{
+            color: activeTab === tab.id ? '#A78BFA' : 'rgba(255,255,255,0.35)',
+            borderBottomColor: activeTab === tab.id ? '#A78BFA' : 'transparent',
+            fontWeight: activeTab === tab.id ? 600 : 400,
+          }}
         >
           {tab.label}
         </button>
@@ -173,14 +221,14 @@ function TabHeader<T extends string>({ tabs, activeTab, onTabChange }: { tabs: {
 function LoadingSkeleton() {
   return (
     <>
-      <div className="text-xs text-[#8b949e] text-center py-4 animate-pulse">
+      <div className="text-center py-4 animate-pulse" style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
         분석 중...
       </div>
       {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-[#161b22] border border-[#30363d] rounded-lg p-3 animate-pulse">
-          <div className="h-3 bg-[#30363d] rounded w-2/3 mb-2" />
-          <div className="h-3 bg-[#30363d] rounded w-1/2 mb-2" />
-          <div className="h-3 bg-[#30363d] rounded w-3/4" />
+        <div key={i} className="mb-2.5 p-3 animate-pulse" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10 }}>
+          <div className="h-3 rounded w-2/3 mb-2" style={{ background: 'rgba(255,255,255,0.08)' }} />
+          <div className="h-3 rounded w-1/2 mb-2" style={{ background: 'rgba(255,255,255,0.06)' }} />
+          <div className="h-3 rounded w-3/4" style={{ background: 'rgba(255,255,255,0.07)' }} />
         </div>
       ))}
     </>
@@ -229,7 +277,14 @@ function Tip({ text, children }: { text: string; children: React.ReactNode }) {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-3 mb-2.5">
+    <div
+      className="mb-2.5 p-3"
+      style={{
+        background: 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 10,
+      }}
+    >
       {children}
     </div>
   );
@@ -237,13 +292,23 @@ function Card({ children }: { children: React.ReactNode }) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[11px] font-semibold text-[#8b949e] mb-1.5">{children}</div>
+    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>{children}</div>
   );
 }
 
 function InterpretationBox({ text }: { text: string }) {
   return (
-    <div className="text-[12px] leading-[1.8] text-[#8b949e] mt-2 whitespace-pre-wrap">
+    <div
+      className="mt-2.5 whitespace-pre-wrap"
+      style={{
+        fontSize: 11,
+        lineHeight: 1.7,
+        color: 'rgba(255,255,255,0.38)',
+        background: 'rgba(255,255,255,0.03)',
+        borderRadius: 7,
+        padding: 10,
+      }}
+    >
       {text}
     </div>
   );
@@ -270,7 +335,7 @@ function trendArrow(trend: 'rising' | 'falling' | 'stable'): { arrow: string; co
 
 function NoDataMessage() {
   return (
-    <div className="text-xs text-[#484f58] text-center py-4">
+    <div className="text-center py-4" style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)' }}>
       분석 데이터가 없습니다
     </div>
   );
@@ -324,19 +389,20 @@ function RiskTab({ ruleEngine, ai }: { ruleEngine: RuleEngineResults | null; ai:
 }
 
 function RiskFactorRow({ label, score, last, tip }: { label: string; score: number; last?: boolean; tip?: string }) {
+  const scoreColor = score >= 2 ? '#F87171' : score >= 1 ? '#FBBF24' : '#34D399';
   return (
-    <div className={`flex justify-between py-[3px] ${last ? '' : 'border-b border-[#21262d]'}`}>
-      <span className="text-[#8b949e]">{tip ? <Tip text={tip}>{label} ⓘ</Tip> : label}</span>
-      <span className={`${factorColor(score)} font-semibold`}>{score}/2</span>
+    <div className={`flex justify-between py-1.5 ${last ? '' : ''}`} style={last ? {} : { borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{tip ? <Tip text={tip}>{label} ⓘ</Tip> : label}</span>
+      <span style={{ fontSize: 11, fontWeight: 500, color: scoreColor }}>{score}/2</span>
     </div>
   );
 }
 
 function SRRow({ label, value, color, tip }: { label: string; value: number; color: string; tip?: string }) {
   return (
-    <div className="flex justify-between">
-      <span>{tip ? <Tip text={tip}>{label} ⓘ</Tip> : label}</span>
-      <span className={color}>${value.toLocaleString()}</span>
+    <div className="flex justify-between py-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{tip ? <Tip text={tip}>{label} ⓘ</Tip> : label}</span>
+      <span className={color} style={{ fontSize: 11, fontWeight: 500 }}>${value.toLocaleString()}</span>
     </div>
   );
 }
@@ -578,10 +644,10 @@ const STRATEGY_LABELS: Record<string, string> = {
   unknown: '미탐지',
 };
 
-const CONFIDENCE_LABELS: Record<string, { label: string; color: string }> = {
-  high: { label: '높음', color: 'bg-[#3fb95033] text-[#3fb950]' },
-  medium: { label: '보통', color: 'bg-[#d2992233] text-[#d29922]' },
-  low: { label: '낮음', color: 'bg-[#f8514933] text-[#f85149]' },
+const CONFIDENCE_LABELS: Record<string, { label: string; bg: string; color: string }> = {
+  high: { label: '높음', bg: 'rgba(52,211,153,0.12)', color: '#34D399' },
+  medium: { label: '보통', bg: 'rgba(251,191,36,0.12)', color: '#FBBF24' },
+  low: { label: '낮음', bg: 'rgba(248,113,113,0.12)', color: '#F87171' },
 };
 
 const PROB_COLORS: Record<string, string> = {
@@ -609,7 +675,7 @@ function OrderStrategyTab({ ruleEngine, ai }: { ruleEngine: OrderAnalysisRuleEng
     <Card>
       <div className="flex justify-between items-center mb-2.5">
         <span className="text-[13px] font-semibold">전략 탐지</span>
-        <span className={`${conf.color} px-2.5 py-0.5 rounded-xl text-[11px] font-semibold`}>
+        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: conf.bg, color: conf.color }}>
           {STRATEGY_LABELS[s.detectedStrategy]}
         </span>
       </div>
@@ -629,7 +695,7 @@ function OrderStrategyTab({ ruleEngine, ai }: { ruleEngine: OrderAnalysisRuleEng
         </div>
         <div className="flex justify-between py-[3px]">
           <span className="text-[#8b949e]"><Tip text="전략 패턴 매칭 신뢰도. 주문 수와 분포 균일성 기반">신뢰도 ⓘ</Tip></span>
-          <span className={conf.color.split(' ')[1]}>{conf.label}</span>
+          <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 5, background: conf.bg, color: conf.color }}>{conf.label}</span>
         </div>
       </div>
       {ai?.strategyInterpretation && <InterpretationBox text={ai.strategyInterpretation} />}
@@ -850,38 +916,44 @@ function StrategyTab({ advice }: { advice: StrategyAdvice | null }) {
 function StrategyCard({ icon, label, tf }: { icon: string; label: string; tf: import('@/lib/types').StrategyTimeframe }) {
   return (
     <Card>
-      <div className="flex items-center gap-1.5 mb-2">
-        <span>{icon}</span>
-        <span className="text-[13px] font-semibold">{label}</span>
-        <span className="text-[11px] text-[#484f58]">({tf.period})</span>
+      {/* Card header: title + period badge */}
+      <div className="flex items-center justify-between mb-2">
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>{icon} {label}</span>
+        <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 6, background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: '#A78BFA' }}>
+          {tf.period}
+        </span>
+      </div>
+
+      {/* Outlook subtitle */}
+      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 8, marginBottom: 10 }}>
+        {tf.outlook}
       </div>
 
       {/* TP / SL */}
-      <div className="flex gap-2 mb-2.5">
-        <div className="flex-1 bg-[#3fb95012] border border-[#3fb95033] rounded-md px-2.5 py-1.5 text-center">
-          <div className="text-[10px] text-[#8b949e]">
+      <div className="flex gap-2 mb-3">
+        <div className="flex-1 rounded-md px-2.5 py-1.5 text-center" style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)' }}>
+          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>
             <Tip text="Take Profit — 목표 익절 가격">TP ⓘ</Tip>
           </div>
-          <div className="text-[13px] font-bold text-[#3fb950]">${tf.tp.toLocaleString()}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#34D399' }}>${tf.tp.toLocaleString()}</div>
         </div>
-        <div className="flex-1 bg-[#f8514912] border border-[#f8514933] rounded-md px-2.5 py-1.5 text-center">
-          <div className="text-[10px] text-[#8b949e]">
+        <div className="flex-1 rounded-md px-2.5 py-1.5 text-center" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)' }}>
+          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>
             <Tip text="Stop Loss — 손절 가격">SL ⓘ</Tip>
           </div>
-          <div className="text-[13px] font-bold text-[#f85149]">${tf.sl.toLocaleString()}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#F87171' }}>${tf.sl.toLocaleString()}</div>
         </div>
       </div>
 
-      {/* Outlook + Key Level + Tip */}
-      <div className="text-[11px] space-y-1.5">
-        <div className="text-[#c9d1d9]">
-          <span className="text-[#8b949e]">관점: </span>{tf.outlook}
+      {/* Data rows */}
+      <div style={{ fontSize: 11 }}>
+        <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ color: 'rgba(255,255,255,0.4)' }}><Tip text="핵심 가격 레벨">핵심 레벨 ⓘ</Tip></span>
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>{tf.keyLevel}</span>
         </div>
-        <div className="text-[#c9d1d9]">
-          <span className="text-[#8b949e]">핵심: </span>{tf.keyLevel}
-        </div>
-        <div className="text-[#d29922]">
-          💡 {tf.tip}
+        <div className="flex justify-between py-1.5">
+          <span style={{ color: 'rgba(255,255,255,0.4)' }}>💡 팁</span>
+          <span style={{ color: '#FBBF24', fontWeight: 500, textAlign: 'right', maxWidth: '65%' }}>{tf.tip}</span>
         </div>
       </div>
     </Card>

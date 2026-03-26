@@ -1,3 +1,6 @@
+// Allow self-signed certificates in local dev (Hyperliquid API)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 import express from "express";
 import { config } from "./config/index.js";
 import apiRouter from "./api/index.js";

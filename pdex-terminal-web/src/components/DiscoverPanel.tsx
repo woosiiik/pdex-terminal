@@ -14,16 +14,22 @@ function formatKST(isoString: string): string {
 
 function SkeletonCard() {
   return (
-    <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-3 animate-pulse">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="h-4 w-12 bg-[#30363d] rounded" />
-        <div className="h-4 w-10 bg-[#30363d] rounded" />
+    <div
+      className="rounded-[14px] p-2.5 mb-1.5 animate-pulse"
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.15)',
+      }}
+    >
+      <div className="flex justify-between items-center mb-2">
+        <div className="h-3.5 w-16 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />
+        <div className="h-3 w-12 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
       </div>
-      <div className="h-3 w-full bg-[#30363d] rounded mb-1.5" />
-      <div className="h-3 w-3/4 bg-[#30363d] rounded mb-1.5" />
-      <div className="flex gap-2 mt-2">
-        <div className="h-6 w-16 bg-[#30363d] rounded" />
-        <div className="h-6 w-16 bg-[#30363d] rounded" />
+      <div className="h-3 w-full rounded-full mb-1.5" style={{ background: 'rgba(255,255,255,0.08)' }} />
+      <div className="h-3 w-3/4 rounded-full mb-3" style={{ background: 'rgba(255,255,255,0.06)' }} />
+      <div className="flex gap-2">
+        <div className="flex-1 h-10 rounded-[8px]" style={{ background: 'rgba(52,211,153,0.06)' }} />
+        <div className="flex-1 h-10 rounded-[8px]" style={{ background: 'rgba(248,113,113,0.06)' }} />
       </div>
     </div>
   );
@@ -36,69 +42,107 @@ interface DiscoverCardProps {
 }
 
 function DiscoverCard({ recommendation: rec, isSelected, onClick }: DiscoverCardProps) {
-  const dirColor = rec.direction === 'LONG' ? '#238636' : '#f85149';
-  const changeColor = rec.changePercent24h >= 0 ? '#3fb950' : '#f85149';
+  const isLong = rec.direction === 'LONG';
+  const changePositive = rec.changePercent24h >= 0;
+
+  const dirBadgeStyle = isLong
+    ? { background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', color: '#34D399' }
+    : { background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.3)', color: '#F87171' };
 
   const confidenceMap = {
-    high: { label: '신뢰도 높음', bg: 'bg-[#23863622]', text: 'text-[#3fb950]' },
-    medium: { label: '신뢰도 보통', bg: 'bg-[#d2992222]', text: 'text-[#d29922]' },
-    low: { label: '신뢰도 낮음', bg: 'bg-[#f8514922]', text: 'text-[#f85149]' },
+    high:   { label: '신뢰도 높음', color: '#34D399' },
+    medium: { label: '신뢰도 보통', color: '#FBBF24' },
+    low:    { label: '신뢰도 낮음', color: '#F87171' },
   };
   const conf = confidenceMap[rec.confidence];
 
+  const cardBorder = isSelected
+    ? '1px solid rgba(255,255,255,0.3)'
+    : '1px solid rgba(255,255,255,0.15)';
+
   return (
-    <button
-      type="button"
+    <div
+      className="rounded-[14px] p-2.5 mb-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: cardBorder,
+      }}
+      onMouseEnter={e => {
+        if (!isSelected) {
+          e.currentTarget.style.border = '1px solid rgba(255,255,255,0.28)';
+          e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+        }
+      }}
+      onMouseLeave={e => {
+        if (!isSelected) {
+          e.currentTarget.style.border = '1px solid rgba(255,255,255,0.15)';
+          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+        }
+      }}
       onClick={onClick}
-      className={`w-full text-left bg-[#161b22] border rounded-lg p-3 transition-colors hover:border-[#484f58] cursor-pointer ${
-        isSelected ? 'border-[#58a6ff] border-2' : 'border-[#30363d]'
-      }`}
     >
-      {/* Header: coin + direction + confidence */}
+      {/* Row 1: coin name + direction badge + confidence */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-[14px] font-bold text-[#c9d1d9]">{rec.coin}</span>
+          <span className="text-white font-bold" style={{ fontSize: 13 }}>{rec.coin}</span>
           <span
-            className="text-[10px] font-semibold px-1.5 py-0.5 rounded text-white"
-            style={{ backgroundColor: dirColor }}
+            className="px-1.5 py-0.5 rounded font-semibold"
+            style={{ fontSize: 10, ...dirBadgeStyle }}
           >
             {rec.direction}
           </span>
         </div>
-        <span className={`text-[10px] px-1.5 py-0.5 rounded ${conf.bg} ${conf.text}`}>
-          {conf.label}
-        </span>
+        <span style={{ fontSize: 10, color: conf.color }}>{conf.label}</span>
       </div>
 
-      {/* Price + 24h change */}
-      <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-[13px] text-[#c9d1d9] font-mono">
+      {/* Row 2: price + 24h change */}
+      <div className="flex items-baseline gap-2 mb-2.5">
+        <span className="font-mono text-white" style={{ fontSize: 13 }}>
           ${rec.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
         </span>
-        <span className="text-[11px] font-mono" style={{ color: changeColor }}>
-          {rec.changePercent24h >= 0 ? '+' : ''}{rec.changePercent24h.toFixed(2)}%
+        <span
+          className="font-mono"
+          style={{ fontSize: 11, color: changePositive ? '#34D399' : '#F87171' }}
+        >
+          {changePositive ? '+' : ''}{rec.changePercent24h.toFixed(2)}%
         </span>
       </div>
 
-      {/* TP / SL */}
-      <div className="flex gap-2 mb-2">
-        <div className="flex-1 bg-[#23863615] border border-[#23863640] rounded px-2 py-1">
-          <div className="text-[9px] text-[#3fb950] mb-0.5">TP</div>
-          <div className="text-[12px] text-[#3fb950] font-mono">
+      {/* Row 3: TP / SL */}
+      <div className="flex gap-2 mb-2.5">
+        <div
+          className="flex-1 px-2 py-1.5 rounded-[8px]"
+          style={{
+            background: 'rgba(52,211,153,0.08)',
+            border: '1px solid rgba(52,211,153,0.18)',
+          }}
+        >
+          <div style={{ fontSize: 9, color: '#34D399', marginBottom: 2 }}>TP</div>
+          <div className="font-mono" style={{ fontSize: 12, color: '#34D399' }}>
             ${rec.tp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
           </div>
         </div>
-        <div className="flex-1 bg-[#f8514915] border border-[#f8514940] rounded px-2 py-1">
-          <div className="text-[9px] text-[#f85149] mb-0.5">SL</div>
-          <div className="text-[12px] text-[#f85149] font-mono">
+        <div
+          className="flex-1 px-2 py-1.5 rounded-[8px]"
+          style={{
+            background: 'rgba(248,113,113,0.08)',
+            border: '1px solid rgba(248,113,113,0.18)',
+          }}
+        >
+          <div style={{ fontSize: 9, color: '#F87171', marginBottom: 2 }}>SL</div>
+          <div className="font-mono" style={{ fontSize: 12, color: '#F87171' }}>
             ${rec.sl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
           </div>
         </div>
       </div>
 
-      {/* Reason */}
-      <p className="text-[11px] text-[#8b949e] leading-relaxed">{rec.reason}</p>
-    </button>
+      {/* Row 4: reason */}
+      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, margin: 0 }}>
+        {rec.reason}
+      </p>
+    </div>
   );
 }
 
@@ -111,27 +155,46 @@ export default function DiscoverPanel() {
   const fetchDiscoverRecommendations = useStore((s) => s.fetchDiscoverRecommendations);
 
   return (
-    <div className="flex flex-col h-full bg-[#0d1117]">
+    <div className="flex flex-col h-full" style={{ fontFamily: "'Pretendard', sans-serif" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[#30363d]">
+      <div
+        className="flex items-center justify-between px-3 py-2.5 shrink-0"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+      >
         <div>
-          <span className="text-[13px] font-semibold text-[#c9d1d9]">🔍 코인 추천</span>
+          <span className="font-semibold text-white" style={{ fontSize: 13 }}>✨ 코인 추천</span>
           {discoverLastUpdated && (
-            <div className="text-[10px] text-[#484f58] mt-0.5">{formatKST(discoverLastUpdated)}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>
+              {formatKST(discoverLastUpdated)}
+            </div>
           )}
         </div>
         <button
           type="button"
           onClick={fetchDiscoverRecommendations}
           disabled={discoverLoading}
-          className="text-[11px] bg-[#238636] text-white px-2.5 py-1 rounded hover:bg-[#2ea043] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: '#7C3AED',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 8,
+            padding: '8px 16px',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: discoverLoading ? 'not-allowed' : 'pointer',
+            opacity: discoverLoading ? 0.5 : 1,
+            transition: 'background 0.15s ease',
+            fontFamily: "'Pretendard', sans-serif",
+          }}
+          onMouseEnter={e => { if (!discoverLoading) e.currentTarget.style.background = '#6D28D9'; }}
+          onMouseLeave={e => { if (!discoverLoading) e.currentTarget.style.background = '#7C3AED'; }}
         >
           {discoverLoading ? '분석 중...' : '새로운 추천 받기'}
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2.5">
+      <div className="flex-1 overflow-y-auto p-3">
         {discoverLoading && !discoverRecommendations ? (
           <>
             <SkeletonCard />
@@ -139,11 +202,13 @@ export default function DiscoverPanel() {
             <SkeletonCard />
           </>
         ) : !discoverRecommendations || discoverRecommendations.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <div className="text-[28px] mb-2">🔍</div>
-              <div className="text-[13px] text-[#8b949e]">추천 데이터가 없습니다</div>
-              <div className="text-[11px] text-[#484f58] mt-1">위 버튼을 눌러 추천을 받아보세요</div>
+              <div className="text-[28px] mb-2">✨</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>추천 데이터가 없습니다</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 4 }}>
+                위 버튼을 눌러 추천을 받아보세요
+              </div>
             </div>
           </div>
         ) : (
