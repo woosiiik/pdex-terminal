@@ -103,3 +103,50 @@ npm run dev
 - [WAS API 규격](./pdex-terminal-was/docs/api-spec.md)
 - [AI Copilot 포지션 분석](./pdex-terminal-web/docs/ai-copilot-position-analysis.md)
 - [AI Copilot 오더 분석](./pdex-terminal-web/docs/ai-copilot-order-analysis.md)
+
+## 프로덕션 배포 (Docker Compose)
+
+### 서버 시작
+
+```bash
+# 환경 변수 설정
+cp .env.prod.example .env
+vi .env  # ANTHROPIC_API_KEY 등 입력
+
+# 빌드 & 실행
+docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+
+# 상태 확인
+docker compose -f docker-compose.prod.yml ps
+```
+
+### 서버 중단
+
+```bash
+# 컨테이너 중단 (데이터 유지)
+docker compose -f docker-compose.prod.yml down
+
+# 컨테이너 + 볼륨(DB 데이터) 전부 삭제
+docker compose -f docker-compose.prod.yml down -v
+```
+
+### 로그 확인
+
+```bash
+# 전체 로그
+docker compose -f docker-compose.prod.yml logs -f
+
+# 특정 서비스 로그
+docker compose -f docker-compose.prod.yml logs -f was
+docker compose -f docker-compose.prod.yml logs -f web
+docker compose -f docker-compose.prod.yml logs -f mysql
+```
+
+### 재빌드 (코드 변경 후)
+
+```bash
+git pull
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.prod.yml --env-file .env up -d
+```
