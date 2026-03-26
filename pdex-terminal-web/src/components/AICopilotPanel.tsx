@@ -54,7 +54,7 @@ export default function AICopilotPanel() {
           <div>
             <p className="text-[13px] font-semibold text-white mb-1">코인을 선택하세요</p>
             <p className="text-[11px] text-white/40 leading-relaxed">
-              좌측 포지션 또는 오더에서<br />코인을 선택하면 상세 분석을<br />확인할 수 있습니다
+              좌측 포지션/오더에서 코인을 선택하거나<br />✨ AI 코인 추천 버튼을 눌러보세요
             </p>
           </div>
         </div>

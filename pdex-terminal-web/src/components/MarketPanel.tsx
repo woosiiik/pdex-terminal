@@ -49,7 +49,7 @@ export default function MarketPanel() {
           </svg>
           <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)' }}>코인을 선택하세요</span>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', lineHeight: 1.6 }}>
-            포지션 또는 오더에서 코인을 선택하면<br />상세 차트를 확인할 수 있습니다
+            포지션/오더에서 코인을 선택하거나<br />✨ AI 코인 추천 버튼을 눌러보세요
           </span>
         </div>
       </div>

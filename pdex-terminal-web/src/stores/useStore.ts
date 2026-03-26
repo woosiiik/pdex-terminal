@@ -143,9 +143,11 @@ export const useStore = create<AppState>((set) => ({
     set({ discoverLoading: true });
     try {
       const res = await analyzeDiscover();
+      const firstCoin = res.recommendations?.[0]?.coin ?? null;
       set({
         discoverRecommendations: res.recommendations,
         discoverLastUpdated: res.timestamp,
+        selectedCoin: firstCoin,
       });
     } catch (err) {
       set((state) => ({

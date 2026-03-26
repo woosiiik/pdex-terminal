@@ -34,6 +34,55 @@ export default function PortfolioPanel() {
 
   return (
     <div className="flex flex-col p-3 gap-1" style={{ fontFamily: "'Pretendard', sans-serif" }}>
+      {/* AI 코인 추천 버튼 */}
+      <button
+        type="button"
+        onClick={() => {
+          setSelectedMode('discover');
+        }}
+        className="w-full mb-2 flex items-center gap-3 px-3 py-2.5 rounded-[14px] cursor-pointer transition-all duration-200"
+        style={{
+          background: selectedMode === 'discover'
+            ? 'rgba(167,139,250,0.15)'
+            : 'rgba(255,255,255,0.04)',
+          border: selectedMode === 'discover'
+            ? '1.5px solid rgba(167,139,250,0.5)'
+            : '1.5px solid rgba(255,255,255,0.15)',
+        }}
+        onMouseEnter={e => {
+          if (selectedMode !== 'discover') {
+            e.currentTarget.style.background = 'rgba(167,139,250,0.08)';
+            e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)';
+          }
+        }}
+        onMouseLeave={e => {
+          if (selectedMode !== 'discover') {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+          }
+        }}
+      >
+        <span className="text-[20px] shrink-0">✨</span>
+        <div className="flex-1 text-left">
+          <div className="text-[13px] font-semibold" style={{ color: selectedMode === 'discover' ? '#A78BFA' : 'rgba(255,255,255,0.85)' }}>
+            AI 코인 추천
+          </div>
+          <div className="text-[10px] mt-0.5" style={{ color: selectedMode === 'discover' ? 'rgba(167,139,250,0.7)' : 'rgba(255,255,255,0.35)' }}>
+            AI가 분석한 단기 트레이딩 추천
+          </div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={selectedMode === 'discover' ? '#A78BFA' : 'rgba(255,255,255,0.3)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+
+      {/* 구분선 */}
+      <div className="flex items-center gap-2 mb-2 mt-1">
+        <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+        <span className="text-[10px] shrink-0" style={{ color: 'rgba(255,255,255,0.25)' }}>내 포트폴리오</span>
+        <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+      </div>
+
       {/* 계정 요약 */}
       <AccountSummaryCard summary={accountSummary} />
 

@@ -168,24 +168,20 @@ export default function TopBar() {
         </div>
       )}
 
-      {/* Right: Mode Toggle (연결된 상태에서만 표시) */}
-      {isConnected && (
+      {/* Right: Mode indicator (read-only, 연결된 상태에서만 표시) */}
+      {isConnected && selectedMode && (
         <div className="flex items-center gap-5 text-[13px]">
           {MODE_OPTIONS.map((opt) => (
-            <button
+            <span
               key={opt.value}
-              type="button"
-              onClick={() => setSelectedMode(opt.value)}
-              className="text-[13px] bg-transparent border-none cursor-pointer transition-colors p-0"
+              className="text-[13px]"
               style={{
-                color: selectedMode === opt.value ? '#ffffff' : 'rgba(255,255,255,0.45)',
+                color: selectedMode === opt.value ? '#ffffff' : 'rgba(255,255,255,0.25)',
                 fontWeight: selectedMode === opt.value ? 700 : 400,
               }}
-              onMouseEnter={e => { if (selectedMode !== opt.value) e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
-              onMouseLeave={e => { if (selectedMode !== opt.value) e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}
             >
               {opt.label}
-            </button>
+            </span>
           ))}
         </div>
       )}
