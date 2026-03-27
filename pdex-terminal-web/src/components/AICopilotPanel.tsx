@@ -303,7 +303,7 @@ function InterpretationBox({ text }: { text: string }) {
       style={{
         fontSize: 11,
         lineHeight: 1.7,
-        color: 'rgba(255,255,255,0.38)',
+        color: 'rgba(255,255,255,0.75)',
         background: 'rgba(255,255,255,0.03)',
         borderRadius: 7,
         padding: 10,
@@ -946,14 +946,19 @@ function StrategyCard({ icon, label, tf }: { icon: string; label: string; tf: im
       </div>
 
       {/* Data rows */}
-      <div style={{ fontSize: 11 }}>
-        <div className="flex justify-between py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)' }}><Tip text="핵심 가격 레벨">핵심 레벨 ⓘ</Tip></span>
-          <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>{tf.keyLevel}</span>
+      <div style={{ margin: '10px 0' }}>
+        {/* 핵심 레벨 */}
+        <div style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>
+            <Tip text="핵심 가격 레벨">핵심 레벨 ⓘ</Tip>
+          </div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>{tf.keyLevel}</div>
         </div>
-        <div className="flex justify-between py-1.5">
-          <span style={{ color: 'rgba(255,255,255,0.4)' }}>💡 팁</span>
-          <span style={{ color: '#FBBF24', fontWeight: 500, textAlign: 'right', maxWidth: '65%' }}>{tf.tip}</span>
+        {/* 팁 */}
+        <div style={{ padding: '8px 0', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+          <span style={{ flexShrink: 0, marginTop: 1 }}>💡</span>
+          <span style={{ flexShrink: 0, fontSize: 10, color: 'rgba(255,255,255,0.4)', marginRight: 4, marginTop: 2 }}>팁</span>
+          <span style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>{tf.tip}</span>
         </div>
       </div>
     </Card>

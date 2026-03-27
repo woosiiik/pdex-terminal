@@ -57,28 +57,28 @@ function DiscoverCard({ recommendation: rec, isSelected, onClick }: DiscoverCard
   const conf = confidenceMap[rec.confidence];
 
   const cardBorder = isSelected
-    ? '1px solid rgba(255,255,255,0.3)'
-    : '1px solid rgba(255,255,255,0.15)';
+    ? '1px solid rgba(167,139,250,0.4)'
+    : '1px solid rgba(167,139,250,0.15)';
 
   return (
     <div
       className="rounded-[14px] p-2.5 mb-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
       style={{
-        background: 'rgba(255,255,255,0.04)',
+        background: 'rgba(255,255,255,0.06)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         border: cardBorder,
       }}
       onMouseEnter={e => {
         if (!isSelected) {
-          e.currentTarget.style.border = '1px solid rgba(255,255,255,0.28)';
-          e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+          e.currentTarget.style.border = '1px solid rgba(167,139,250,0.4)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
         }
       }}
       onMouseLeave={e => {
         if (!isSelected) {
-          e.currentTarget.style.border = '1px solid rgba(255,255,255,0.15)';
-          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+          e.currentTarget.style.border = '1px solid rgba(167,139,250,0.15)';
+          e.currentTarget.style.transform = '';
         }
       }}
       onClick={onClick}
@@ -139,9 +139,17 @@ function DiscoverCard({ recommendation: rec, isSelected, onClick }: DiscoverCard
       </div>
 
       {/* Row 4: reason */}
-      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, margin: 0 }}>
-        {rec.reason}
-      </p>
+      <div
+        style={{
+          background: 'rgba(167,139,250,0.08)',
+          borderRadius: 8,
+          padding: '6px 8px',
+        }}
+      >
+        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, margin: 0 }}>
+          {rec.reason}
+        </p>
+      </div>
     </div>
   );
 }
@@ -155,16 +163,16 @@ export default function DiscoverPanel() {
   const fetchDiscoverRecommendations = useStore((s) => s.fetchDiscoverRecommendations);
 
   return (
-    <div className="flex flex-col h-full" style={{ fontFamily: "'Pretendard', sans-serif" }}>
+    <div className="flex flex-col h-full" style={{ fontFamily: "'Pretendard', sans-serif", background: '#120D28', border: '1px solid rgba(167,139,250,0.2)' }}>
       {/* Header */}
       <div
         className="flex items-center justify-between px-3 py-2.5 shrink-0"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
       >
         <div>
-          <span className="font-semibold text-white" style={{ fontSize: 13 }}>✨ 코인 추천</span>
+          <span className="font-semibold" style={{ fontSize: 13, color: '#C4B5FD' }}>✨ 코인 추천</span>
           {discoverLastUpdated && (
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
               {formatKST(discoverLastUpdated)}
             </div>
           )}
